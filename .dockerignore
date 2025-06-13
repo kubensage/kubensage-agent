@@ -1,0 +1,10 @@
+# GIT
+.gitignore
+
+# MISC
+LICENSE
+README.md
+
+# IDE
+.idea
+*.iml
