@@ -23,7 +23,7 @@ jobs:
 
       - name: Extract version from tag
         id: extract_version
-        run: echo "VERSION=1.0.0 >> $GITHUB_ENV
+        run: echo "VERSION=1.0.0" >> $GITHUB_ENV
         #run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
       - name: Build binaries
