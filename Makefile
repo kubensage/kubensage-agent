@@ -30,7 +30,7 @@ build-darwin-arm64:
 
 build-windows-amd64:
 	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
-		-o $(OUTPUT_DIR)/kubensage-agent-windows-amd64.exe cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-windows-amd64.exe cmd/kubensage-agent/main.go
 
 # GIT
 tag:
