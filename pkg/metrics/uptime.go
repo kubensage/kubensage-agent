@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func getProcessUptime(pid int) (float64, error) {
+func getProcessUptime(pid int) (uint64, error) {
 	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 	if err != nil {
 		return 0, fmt.Errorf("failed to read /proc/%d/stat: %v", pid, err)
@@ -41,5 +41,5 @@ func getProcessUptime(pid int) (float64, error) {
 		processUptimeSeconds = 0
 	}
 
-	return processUptimeSeconds, nil
+	return uint64(processUptimeSeconds), nil
 }

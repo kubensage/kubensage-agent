@@ -6,23 +6,23 @@ import (
 	"strings"
 )
 
-// getCmdline legge la command line completa di un processo dal file /proc/[pid]/cmdline
-func getCmdline(pid int) (string, error) {
-	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+// getCommandLine reads the full command line of a process from /proc/[pid]/cmdline
+func getCmdLine(pid int) (string, error) {
+	rawData, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
 	if err != nil {
 		return "", fmt.Errorf("failed to read /proc/%d/cmdline: %v", pid, err)
 	}
 
-	// Gli argomenti sono separati da \0, che non sono visibili in una stringa normale
-	args := strings.Split(string(data), "\x00")
+	// Arguments are separated by null bytes (\0), not spaces
+	rawArgs := strings.Split(string(rawData), "\x00")
 
-	// Rimuove eventuali stringhe vuote (specialmente l'ultima)
-	var cleaned []string
-	for _, arg := range args {
+	// Filter out any empty strings (especially at the end)
+	var args []string
+	for _, arg := range rawArgs {
 		if arg != "" {
-			cleaned = append(cleaned, arg)
+			args = append(args, arg)
 		}
 	}
 
-	return strings.Join(cleaned, " "), nil
+	return strings.Join(args, " "), nil
 }

@@ -11,7 +11,7 @@ type ProcessMetrics struct {
 	PID           int       // Process ID
 	Name          string    // Process name
 	Cmdline       string    // Full command line
-	Uptime        float64   // Process uptime
+	Uptime        uint64    // Process uptime
 	CPUUserTime   float64   // CPU time in user mode (seconds)
 	CPUSystemTime float64   // CPU time in kernel mode (seconds)
 	CPUPercent    float64   // Estimated CPU usage percentage (optional)
@@ -38,7 +38,7 @@ func ReadMetrics(pid int) (ProcessMetrics, error) {
 	processMetrics.Name = name
 
 	// cmdline
-	cmdline, err := getCmdline(pid)
+	cmdline, err := getCmdLine(pid)
 	if err != nil {
 		return processMetrics, err
 	}
