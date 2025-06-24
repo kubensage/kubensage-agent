@@ -10,7 +10,7 @@ VERSION ?= 1.0.0
 clean:
 	rm -rf $(OUTPUT_DIR) || true
 
-build-all: clean build-linux-amd64 build-linux-arm64 #build-darwin-amd64 build-darwin-arm64 build-windows-amd64
+build-all: clean build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
 
 build-linux-amd64:
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
