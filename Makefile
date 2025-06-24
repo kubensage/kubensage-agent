@@ -37,5 +37,5 @@ tag:
 ifndef TAG
 	$(error TAG is not set. Usage: make tag TAG=v1.0.0)
 endif
-	git tag $(TAG)
+	git tag $(TAG) -m "Release $(TAG)"
 	git push origin $(TAG)
