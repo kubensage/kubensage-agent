@@ -14,19 +14,19 @@ build-all: clean build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-da
 
 build-linux-amd64:
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
-		-o $(OUTPUT_DIR)/kubensage-agent-linux-amd64 cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
 build-linux-arm64:
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" \
-		-o $(OUTPUT_DIR)/kubensage-agent-linux-arm64 cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-arm64 cmd/kubensage-agent/main.go
 
 build-darwin-amd64:
 	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
-		-o $(OUTPUT_DIR)/kubensage-agent-darwin-amd64 cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-darwin-amd64 cmd/kubensage-agent/main.go
 
 build-darwin-arm64:
 	GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" \
-		-o $(OUTPUT_DIR)/kubensage-agent-darwin-arm64 cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-darwin-arm64 cmd/kubensage-agent/main.go
 
 build-windows-amd64:
 	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
