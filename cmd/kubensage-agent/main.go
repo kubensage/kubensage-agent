@@ -1,13 +1,10 @@
 package main
 
-import (
-	"github.com/kubensage/kubensage-agent/internal/discovery"
-	"github.com/kubensage/kubensage-agent/pkg/metrics"
-	"log"
-)
+import "github.com/kubensage/kubensage-agent/pkg/discovery"
 
 func main() {
-	targets := []string{"kube-apiserver", "kubelet", "etcd", "kube-controller-manager", "kube-scheduler"}
+	discovery.A()
+	/*targets := []string{"kube-apiserver", "kubelet", "etcd", "kube-controller-manager", "kube-scheduler"}
 
 	for _, name := range targets {
 		// Trova il PID del processo
@@ -33,5 +30,5 @@ func main() {
 
 		// Log delle metriche del processo
 		log.Printf("Metrics for %s (pid %d): %s", name, pid, jsonStr)
-	}
+	}*/
 }

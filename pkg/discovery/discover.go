@@ -1,40 +1,74 @@
-package main
+package discovery
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/kubensage/kubensage-agent/pkg/model"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"io/ioutil"
+	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
+	"log"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-
-	"google.golang.org/grpc"
-	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// This program interacts with any container runtime that implements the Kubernetes Container Runtime Interface (CRI),
-// such as containerd, CRI-O, and other CRI-compliant runtimes. It uses gRPC to communicate with the runtime's service
-// and retrieve container information, making it compatible with different container runtimes in Kubernetes environments.
-func main() {
-	// Connessione al socket di containerd
+func A() {
 	conn, err := grpc.NewClient("unix:///var/run/containerd/containerd.sock",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
 	if err != nil {
-		panic(fmt.Errorf("errore nella connessione al socket: %v", err))
+		log.Printf("Failed to connect: %v", err)
 	}
 
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			log.Printf("Failed to close client connection: %v", err)
+		}
+	}(conn)
 
 	runtimeClient := runtimeapi.NewRuntimeServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// Lista container
-	resp, err := runtimeClient.ListContainers(ctx, &runtimeapi.ListContainersRequest{})
+	resp, err := runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{})
+
+	if err != nil {
+		log.Printf("Failed to list pod sandboxes: %v", err)
+	}
+
+	fmt.Printf("Found %d pod sandboxes:\n", len(resp.Items))
+
+	for _, sandbox := range resp.Items {
+		podInfo := model.PodInfo{
+			Id:          sandbox.Id,
+			Name:        sandbox.Metadata.Name,
+			Namespace:   sandbox.Metadata.Namespace,
+			Uid:         sandbox.Metadata.Uid,
+			State:       sandbox.State.String(),
+			CreatedAt:   sandbox.CreatedAt,
+			Annotations: sandbox.Annotations,
+			Labels:      sandbox.Labels,
+		}
+
+		jsonStr, err := model.ToJsonString(podInfo)
+		if err != nil {
+			log.Printf("Failed to serialize PodInfo for sandbox %s: %v", sandbox.Id, err)
+			continue
+		}
+
+		stats, err := runtimeClient.PodSandboxStats(ctx, &runtimeapi.PodSandboxStatsRequest{PodSandboxId: sandbox.Id})
+		log.Printf("Stats: %s", stats)
+
+		log.Printf("PodInfo: %s", jsonStr)
+	}
+
+	/*resp, err := runtimeClient.ListContainers(ctx, &runtimeapi.ListContainersRequest{})
 	if err != nil {
 		panic(fmt.Errorf("errore nella chiamata ListContainers: %v", err))
 	}
@@ -109,5 +143,32 @@ func main() {
 		}
 
 		fmt.Println()
+	}*/
+}
+
+func FindProcessPID(binary string) (int, error) {
+	entries, _ := os.ReadDir("/proc")
+
+	for _, e := range entries {
+		if !e.IsDir() || !isNumeric(e.Name()) {
+			continue
+		}
+
+		content, err := os.ReadFile(filepath.Join("/proc", e.Name(), "cmdline"))
+		if err != nil {
+			continue
+		}
+
+		if strings.Contains(string(content), binary) {
+			pid, _ := strconv.Atoi(e.Name())
+			return pid, nil
+		}
 	}
+
+	return 0, fmt.Errorf("process %s not found", binary)
+}
+
+func isNumeric(s string) bool {
+	_, err := strconv.Atoi(s)
+	return err == nil
 }
