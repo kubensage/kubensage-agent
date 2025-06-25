@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" version="27.1.6">
+  <diagram name="Pagina-1" id="_3zBsm90YQBOYuI0GS7-">
+    <mxGraphModel dx="1379" dy="772" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-1" value="" style="swimlane;startSize=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="80" width="580" height="430" as="geometry">
+            <mxRectangle x="20" y="80" width="50" height="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-2" value="" style="shape=image;imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;image=https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Kubernetes_logo_without_workmark.svg/1055px-Kubernetes_logo_without_workmark.svg.png;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="40" y="10" width="102.97" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-3" value="&lt;div&gt;&lt;b&gt;AGENT&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="22.229999999999997" y="230" width="138.51" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-4" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="90.99" y="220" as="sourcePoint" />
+            <mxPoint x="91" y="120" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-8" value="" style="swimlane;startSize=0;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="300" y="235" width="120" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-13" value="&lt;b&gt;RELAY (Proxy)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-8">
+          <mxGeometry x="5" y="28" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-28" value="" style="shape=image;imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;image=https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Blue.png;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-8">
+          <mxGeometry y="58.85000000000002" width="35.22" height="31.15" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-10" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="hFkqyav0IqYdc8Cjmz-q-1" source="hFkqyav0IqYdc8Cjmz-q-3" target="hFkqyav0IqYdc8Cjmz-q-8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="520" as="sourcePoint" />
+            <mxPoint x="420" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-11" value="gRPC to CRI socket" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="100" y="160" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-12" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;gRPC unidirectional (every 5s)&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="200" y="240" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-5" value="&lt;b&gt;CLUSTER 1,2... n&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="460" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-16" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;gRPC&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;unidirectional&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="490" y="250" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-29" value="" style="shape=image;imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;image=https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Blue.png;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="40" y="298.85" width="35.22" height="31.15" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-35" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;HTTP&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;rotation=45;" vertex="1" parent="hFkqyav0IqYdc8Cjmz-q-1">
+          <mxGeometry x="495" y="340" width="50" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-14" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.003;entryY=0.541;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="hFkqyav0IqYdc8Cjmz-q-8" target="hFkqyav0IqYdc8Cjmz-q-38">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="600" as="sourcePoint" />
+            <mxPoint x="640" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-15" value="generic gRPC client" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="670" y="340" width="20" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-19" value="Prometheus" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="670" y="530" width="20" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-21" value="" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.118;exitY=0.832;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="hFkqyav0IqYdc8Cjmz-q-38" target="hFkqyav0IqYdc8Cjmz-q-8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="640" y="540" as="sourcePoint" />
+            <mxPoint x="600" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-22" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.06;entryY=0.283;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="hFkqyav0IqYdc8Cjmz-q-8" target="hFkqyav0IqYdc8Cjmz-q-38">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="360" as="sourcePoint" />
+            <mxPoint x="640" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-23" value="Other storages" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="670" y="120" width="20" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hFkqyav0IqYdc8Cjmz-q-38" value="" style="ellipse;whiteSpace=wrap;html=1;shadow=1;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="620" y="30" width="120" height="610" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
