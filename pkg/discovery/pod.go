@@ -4,13 +4,9 @@ import (
 	"context"
 	"fmt"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
-	"time"
 )
 
-func listPods(runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodSandbox, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func listPods(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodSandbox, error) {
 	resp, err := runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{})
 
 	if err != nil {
@@ -20,10 +16,7 @@ func listPods(runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodS
 	return resp.Items, nil
 }
 
-func listPodStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) (*runtimeapi.PodSandboxStats, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func listPodStats(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) (*runtimeapi.PodSandboxStats, error) {
 	podSandboxStatsFilter := runtimeapi.PodSandboxStatsFilter{Id: podSandboxId}
 	podSandboxStatsRequest := runtimeapi.ListPodSandboxStatsRequest{Filter: &podSandboxStatsFilter}
 	resp, err := runtimeClient.ListPodSandboxStats(ctx, &podSandboxStatsRequest)

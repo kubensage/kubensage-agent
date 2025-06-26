@@ -4,13 +4,9 @@ import (
 	"context"
 	"fmt"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
-	"time"
 )
 
-func listContainers(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) ([]*runtimeapi.Container, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func listContainers(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) ([]*runtimeapi.Container, error) {
 	containerFilter := runtimeapi.ContainerFilter{PodSandboxId: podSandboxId}
 	containersRequest := runtimeapi.ListContainersRequest{Filter: &containerFilter}
 
@@ -23,10 +19,7 @@ func listContainers(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId 
 	return resp.Containers, nil
 }
 
-func listContainerStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string, containerId string) (*runtimeapi.ContainerStats, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func listContainerStats(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string, containerId string) (*runtimeapi.ContainerStats, error) {
 	containerStatsFilter := runtimeapi.ContainerStatsFilter{Id: containerId, PodSandboxId: podSandboxId}
 	containerStatsRequest := runtimeapi.ListContainerStatsRequest{Filter: &containerStatsFilter}
 

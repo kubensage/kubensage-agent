@@ -19,7 +19,7 @@ var criSocketCandidates = map[string][]string{
 	},
 }
 
-func criSocketDiscovery() (string, error) {
+func CriSocketDiscovery() (string, error) {
 	for runtime, paths := range criSocketCandidates {
 		for _, p := range paths {
 			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
