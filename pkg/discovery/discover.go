@@ -36,9 +36,14 @@ func Discover() error {
 	}
 
 	for _, sandbox := range podSandboxes {
-		var podInfo model.PodInfo
-		podInfo.Timestamp = time.Now().UnixNano()
-		podInfo.Pod = sandbox
+		podInfo := model.PodInfo{Timestamp: time.Now().UnixNano(), Pod: sandbox}
+
+		podStats, err := ListPodStats(runtimeClient, sandbox.Id)
+		if err != nil {
+			log.Printf("Failed to list pod stats: %v", err)
+		} else {
+			podInfo.PodStats = podStats
+		}
 
 		containers, err := ListContainers(runtimeClient, sandbox.Id)
 		if err != nil {

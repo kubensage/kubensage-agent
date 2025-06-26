@@ -23,7 +23,7 @@ func ListContainers(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId 
 	return resp.Containers, nil
 }
 
-func ListContainerStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string, containerId string) ([]*runtimeapi.ContainerStats, error) {
+func ListContainerStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string, containerId string) (*runtimeapi.ContainerStats, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -36,5 +36,9 @@ func ListContainerStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandbo
 		return nil, fmt.Errorf("failed to list container stats: %v", err.Error())
 	}
 
-	return stats.Stats, nil
+	if len(stats.Stats) == 0 {
+		return nil, fmt.Errorf("no container stats found for pod sandbox id %s", podSandboxId)
+	}
+
+	return stats.Stats[0], nil
 }

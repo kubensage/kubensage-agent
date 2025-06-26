@@ -7,5 +7,6 @@ import (
 type PodInfo struct {
 	Timestamp  int64
 	Pod        *runtimeapi.PodSandbox
+	PodStats   *runtimeapi.PodSandboxStats
 	Containers []*ContainerInfo
 }

@@ -6,5 +6,5 @@ import (
 
 type ContainerInfo struct {
 	Container      *runtimeapi.Container
-	ContainerStats []*runtimeapi.ContainerStats
+	ContainerStats *runtimeapi.ContainerStats
 }
