@@ -24,25 +24,6 @@ func listContainers(
 	return resp.Containers, nil
 }
 
-// getContainersByPodID filters and returns containers that are associated with the given podSandboxID.
-// It iterates over the list of all containers and filters those whose PodSandboxId matches the provided ID.
-func getContainersByPodID(
-	containers []*runtimeapi.Container,
-	podSandboxID string,
-) []*runtimeapi.Container {
-	var filtered []*runtimeapi.Container
-	// Iterate through containers and select those associated with the given PodSandboxId.
-	for _, ctr := range containers {
-		// The PodSandboxId is stored on each container's attributes.
-		if ctr.PodSandboxId == podSandboxID {
-			filtered = append(filtered, ctr)
-		}
-	}
-
-	// Return the filtered list of containers.
-	return filtered
-}
-
 // listContainersStats fetches the container stats from the runtime service.
 // It interacts with the RuntimeServiceClient to retrieve the stats of all containers currently managed by the runtime.
 func listContainersStats(
