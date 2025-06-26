@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func ListPods(runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodSandbox, error) {
+func listPods(runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodSandbox, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -20,7 +20,7 @@ func ListPods(runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodS
 	return resp.Items, nil
 }
 
-func ListPodStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) (*runtimeapi.PodSandboxStats, error) {
+func listPodStats(runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) (*runtimeapi.PodSandboxStats, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

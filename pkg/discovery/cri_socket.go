@@ -19,7 +19,7 @@ var criSocketCandidates = map[string][]string{
 	},
 }
 
-func CriSocketDiscovery() (string, error) {
+func criSocketDiscovery() (string, error) {
 	for runtime, paths := range criSocketCandidates {
 		for _, p := range paths {
 			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
@@ -28,5 +28,6 @@ func CriSocketDiscovery() (string, error) {
 			}
 		}
 	}
+
 	return "", fmt.Errorf("no known CRI sockets found")
 }

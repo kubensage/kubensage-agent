@@ -1,26 +1,26 @@
 package discovery
 
 import (
+	"fmt"
 	"github.com/kubensage/kubensage-agent/pkg/model"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
 	"time"
 )
 
-func Discover() error {
-	socket, err := CriSocketDiscovery()
-
+func Discover() ([]model.PodInfo, error) {
+	// Discover the socket
+	socket, err := criSocketDiscovery()
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to discover CRI socket: %v", err)
 	}
 
-	conn, err := grpc.NewClient(socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
+	// Create the gRPC connection
+	conn, err := utils.GrpcClientConnection(socket)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create gRPC connection: %v", err)
 	}
 	defer func(conn *grpc.ClientConn) {
 		if err := conn.Close(); err != nil {
@@ -28,24 +28,31 @@ func Discover() error {
 		}
 	}(conn)
 
+	// Create the runtime client
 	runtimeClient := runtimeapi.NewRuntimeServiceClient(conn)
 
-	podSandboxes, err := ListPods(runtimeClient)
+	// Discover the pods
+	podSandboxes, err := listPods(runtimeClient)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to list pod sandboxes: %v", err)
 	}
 
+	var allPodInfo []model.PodInfo
+
+	// Iterate through the pods
 	for _, sandbox := range podSandboxes {
 		podInfo := model.PodInfo{Timestamp: time.Now().UnixNano(), Pod: sandbox}
 
-		podStats, err := ListPodStats(runtimeClient, sandbox.Id)
+		// Retrieve the pod stats
+		podStats, err := listPodStats(runtimeClient, sandbox.Id)
 		if err != nil {
-			log.Printf("Failed to list pod stats: %v", err)
+			log.Printf("Failed to list pod stats for sandbox %s: %v", sandbox.Id, err)
 		} else {
 			podInfo.PodStats = podStats
 		}
 
-		containers, err := ListContainers(runtimeClient, sandbox.Id)
+		// Retrieve the containers of the pod
+		containers, err := listContainers(runtimeClient, sandbox.Id)
 		if err != nil {
 			log.Printf("Failed to discover containers for sandbox %s: %v", sandbox.Id, err)
 			continue
@@ -53,8 +60,9 @@ func Discover() error {
 
 		var containerInfos []*model.ContainerInfo
 
+		// Retrieve the stats for each container
 		for _, container := range containers {
-			stats, err := ListContainerStats(runtimeClient, sandbox.Id, container.Id)
+			stats, err := listContainerStats(runtimeClient, sandbox.Id, container.Id)
 			if err != nil {
 				log.Printf("Failed to discover stats for container %s: %v", container.Id, err)
 				continue
@@ -70,14 +78,8 @@ func Discover() error {
 
 		podInfo.Containers = containerInfos
 
-		jsonStr, err := utils.ToJsonString(podInfo)
-		if err != nil {
-			log.Printf("Failed to serialize PodInfo for sandbox %s: %v", sandbox.Id, err)
-			continue
-		}
-
-		log.Printf("PodInfo: %s", jsonStr)
+		allPodInfo = append(allPodInfo, podInfo)
 	}
 
-	return nil
+	return allPodInfo, nil
 }
