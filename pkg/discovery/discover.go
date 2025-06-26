@@ -10,38 +10,51 @@ import (
 )
 
 func Discover(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient) ([]model.PodInfo, error) {
+	var allPodInfo []model.PodInfo
+
 	// Discover the pods
-	podSandboxes, err := listPods(ctx, runtimeClient)
+	pods, err := listPods(ctx, runtimeClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pod sandboxes: %v", err)
 	}
 
-	var allPodInfo []model.PodInfo
+	podsStats, err := listPodStats(ctx, runtimeClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pod stats: %v", err)
+	}
+
+	containers, err := listContainers(ctx, runtimeClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containers: %v", err)
+	}
+
+	containersStats, err := listContainersStats(ctx, runtimeClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containersStats: %v", err)
+	}
 
 	// Iterate through the pods
-	for _, sandbox := range podSandboxes {
-		podInfo := model.PodInfo{Timestamp: time.Now().UnixNano(), Pod: sandbox}
+	for _, pod := range pods {
+		// PodInfo initialization
+		var podInfo model.PodInfo
+		podInfo.Timestamp = time.Now().UnixNano()
+		podInfo.Pod = pod
 
 		// Retrieve the pod stats
-		podStats, err := listPodStats(ctx, runtimeClient, sandbox.Id)
+		podStats, err := getPodStatsById(podsStats, pod.Id)
 		if err != nil {
-			log.Printf("Failed to list pod stats for sandbox %s: %v", sandbox.Id, err)
+			log.Println("Failed to get pod stats: ", err)
 		} else {
 			podInfo.PodStats = podStats
 		}
 
-		// Retrieve the containers of the pod
-		containers, err := listContainers(ctx, runtimeClient, sandbox.Id)
-		if err != nil {
-			log.Printf("Failed to discover containers for sandbox %s: %v", sandbox.Id, err)
-			continue
-		}
+		containers := getContainersByPodID(containers, pod.Id)
 
 		var containerInfos []*model.ContainerInfo
 
 		// Retrieve the stats for each container
 		for _, container := range containers {
-			stats, err := listContainerStats(ctx, runtimeClient, sandbox.Id, container.Id)
+			containerStats, err := getContainerStatsByContainerId(containersStats, container.Id)
 			if err != nil {
 				log.Printf("Failed to discover stats for container %s: %v", container.Id, err)
 				continue
@@ -49,7 +62,7 @@ func Discover(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient
 
 			containerInfo := &model.ContainerInfo{
 				Container:      container,
-				ContainerStats: stats,
+				ContainerStats: containerStats,
 			}
 
 			containerInfos = append(containerInfos, containerInfo)

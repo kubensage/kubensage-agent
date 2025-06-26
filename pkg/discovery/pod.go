@@ -6,7 +6,10 @@ import (
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-func listPods(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient) ([]*runtimeapi.PodSandbox, error) {
+func listPods(
+	ctx context.Context,
+	runtimeClient runtimeapi.RuntimeServiceClient,
+) ([]*runtimeapi.PodSandbox, error) {
 	resp, err := runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{})
 
 	if err != nil {
@@ -16,18 +19,29 @@ func listPods(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient
 	return resp.Items, nil
 }
 
-func listPodStats(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient, podSandboxId string) (*runtimeapi.PodSandboxStats, error) {
-	podSandboxStatsFilter := runtimeapi.PodSandboxStatsFilter{Id: podSandboxId}
-	podSandboxStatsRequest := runtimeapi.ListPodSandboxStatsRequest{Filter: &podSandboxStatsFilter}
-	resp, err := runtimeClient.ListPodSandboxStats(ctx, &podSandboxStatsRequest)
+func listPodStats(
+	ctx context.Context,
+	runtimeClient runtimeapi.RuntimeServiceClient,
+) ([]*runtimeapi.PodSandboxStats, error) {
+	resp, err := runtimeClient.ListPodSandboxStats(ctx, &runtimeapi.ListPodSandboxStatsRequest{})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pod sandbox stats: %v", err.Error())
 	}
 
-	if len(resp.Stats) == 0 {
-		return nil, fmt.Errorf("no pod stats found for pod sandbox id %s", podSandboxId)
+	return resp.Stats, nil
+}
+
+func getPodStatsById(
+	podStats []*runtimeapi.PodSandboxStats,
+	id string,
+) (*runtimeapi.PodSandboxStats, error) {
+	for _, stats := range podStats {
+		// PodSandboxStats.Attributes.Id holds the sandbox ID
+		if stats.Attributes.Id == id {
+			return stats, nil
+		}
 	}
 
-	return resp.Stats[0], nil
+	return nil, fmt.Errorf("no pod stats found for sandbox ID %q", id)
 }
