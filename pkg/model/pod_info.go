@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type PodInfo struct {
@@ -19,7 +20,7 @@ func ToJsonString(p PodInfo) (string, error) {
 	data, err := json.MarshalIndent(p, "", "  ")
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error marshalling PodInfo: %s", err.Error())
 	}
 
 	return string(data), nil
