@@ -7,5 +7,5 @@ import (
 type PodInfo struct {
 	Timestamp  int64
 	Pod        *runtimeapi.PodSandbox
-	Containers []ContainerInfo
+	Containers []*ContainerInfo
 }

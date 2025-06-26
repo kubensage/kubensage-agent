@@ -22,10 +22,8 @@ func Discover() error {
 	if err != nil {
 		return err
 	}
-
 	defer func(conn *grpc.ClientConn) {
-		err := conn.Close()
-		if err != nil {
+		if err := conn.Close(); err != nil {
 			log.Printf("Failed to close client connection: %v", err)
 		}
 	}(conn)
@@ -33,34 +31,31 @@ func Discover() error {
 	runtimeClient := runtimeapi.NewRuntimeServiceClient(conn)
 
 	podSandboxes, err := ListPods(runtimeClient)
-
 	if err != nil {
 		return err
 	}
 
 	for _, sandbox := range podSandboxes {
 		var podInfo model.PodInfo
-
 		podInfo.Timestamp = time.Now().UnixNano()
 		podInfo.Pod = sandbox
 
 		containers, err := ListContainers(runtimeClient, sandbox.Id)
 		if err != nil {
-			log.Printf("Failed to discover container: %v", err)
+			log.Printf("Failed to discover containers for sandbox %s: %v", sandbox.Id, err)
 			continue
 		}
 
-		var containerInfos []model.ContainerInfo
+		var containerInfos []*model.ContainerInfo
 
 		for _, container := range containers {
 			stats, err := ListContainerStats(runtimeClient, sandbox.Id, container.Id)
-
 			if err != nil {
-				log.Printf("Failed to discover container: %v", err)
+				log.Printf("Failed to discover stats for container %s: %v", container.Id, err)
 				continue
 			}
 
-			containerInfo := model.ContainerInfo{
+			containerInfo := &model.ContainerInfo{
 				Container:      container,
 				ContainerStats: stats,
 			}
