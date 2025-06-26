@@ -89,10 +89,16 @@ func Discover(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient
 		podInfo.Timestamp = time.Now().UnixNano() // Set the timestamp for when the discovery occurred
 		podInfo.Pod = pod                         // Set the current pod in the PodInfo object
 
+		/* TODO understand what we want to do with pod having state NOT_READY
+		if pod.State == runtimeapi.PodSandboxState_SANDBOX_NOTREADY {
+			log.Printf("Found pod not ready %s, skipping it...", pod.Id)
+			continue
+		}*/
+
 		// Retrieve the statistics for the current pod
 		podStats, err := getPodStatsById(podsStats, pod.Id)
 		if err != nil {
-			log.Println("Failed to get pod stats: ", err)
+			log.Printf("Failed to get pod stats: %v, pod state %v", err, pod.State)
 		} else {
 			podInfo.PodStats = podStats // Store the pod stats in the PodInfo object
 		}
