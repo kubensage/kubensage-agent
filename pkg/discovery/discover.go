@@ -2,10 +2,12 @@ package discovery
 
 import (
 	"github.com/kubensage/kubensage-agent/pkg/model"
+	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
+	"time"
 )
 
 func Discover() error {
@@ -30,25 +32,45 @@ func Discover() error {
 
 	runtimeClient := runtimeapi.NewRuntimeServiceClient(conn)
 
-	podSandboxes, err := PodDiscovery(runtimeClient)
+	podSandboxes, err := ListPods(runtimeClient)
 
 	if err != nil {
 		return err
 	}
 
 	for _, sandbox := range podSandboxes {
-		podInfo := model.PodInfo{
-			Id:          sandbox.Id,
-			Name:        sandbox.Metadata.Name,
-			Namespace:   sandbox.Metadata.Namespace,
-			Uid:         sandbox.Metadata.Uid,
-			State:       sandbox.State.String(),
-			CreatedAt:   sandbox.CreatedAt,
-			Annotations: sandbox.Annotations,
-			Labels:      sandbox.Labels,
+		var podInfo model.PodInfo
+
+		podInfo.Timestamp = time.Now().UnixNano()
+		podInfo.Pod = sandbox
+
+		containers, err := ListContainers(runtimeClient, sandbox.Id)
+		if err != nil {
+			log.Printf("Failed to discover container: %v", err)
+			continue
 		}
 
-		jsonStr, err := model.ToJsonString(podInfo)
+		var containerInfos []model.ContainerInfo
+
+		for _, container := range containers {
+			stats, err := ListContainerStats(runtimeClient, sandbox.Id, container.Id)
+
+			if err != nil {
+				log.Printf("Failed to discover container: %v", err)
+				continue
+			}
+
+			containerInfo := model.ContainerInfo{
+				Container:      container,
+				ContainerStats: stats,
+			}
+
+			containerInfos = append(containerInfos, containerInfo)
+		}
+
+		podInfo.Containers = containerInfos
+
+		jsonStr, err := utils.ToJsonString(podInfo)
 		if err != nil {
 			log.Printf("Failed to serialize PodInfo for sandbox %s: %v", sandbox.Id, err)
 			continue
