@@ -79,11 +79,18 @@ func collectOnce(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceCli
 	// Discover pods and their associated information
 	podInfos, err := discovery.Discover(ctx, runtimeClient)
 	if err != nil {
-		return err // Return error if discovery fails
+		return err
 	}
-
 	// Log the estimated number of pods and containers
 	log.Printf("Processing %d pods, with a total of %d containers.", len(podInfos), sumContainerCount(podInfos))
+
+	nodeInfo, err := discovery.ListNodeInfo(ctx)
+	if err != nil {
+		return err
+	}
+	// Log node info
+	jsonString, _ := utils.ToJsonString(nodeInfo)
+	log.Printf("NodeInfo: %v", jsonString)
 
 	// Iterate through the discovered pod information and log it
 	/*for _, podInfo := range podInfos {
