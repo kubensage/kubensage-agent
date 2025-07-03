@@ -92,7 +92,6 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 			memoryMetrics := m.SafeMemoryMetrics(containerStats)
 			fileSystemMetrics := m.SafeFileSystemMetrics(containerStats)
 			swapMetrics := m.SafeSwapMetrics(containerStats)
-			ioMetrics := m.SafeIoMetrics(containerStats)
 
 			containerMetrics := &m.ContainerMetrics{
 				Id:                container.Id,
@@ -105,7 +104,6 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 				MemoryMetrics:     memoryMetrics,
 				FileSystemMetrics: fileSystemMetrics,
 				SwapMetrics:       swapMetrics,
-				IoMetrics:         ioMetrics,
 			}
 
 			containersMetrics = append(containersMetrics, containerMetrics)

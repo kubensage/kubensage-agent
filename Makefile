@@ -1,5 +1,5 @@
 OUTPUT_DIR = .go-builds
-VERSION ?= 1.0.2
+VERSION ?= 1.0.3
 
 .PHONY: clean build-all \
 	build-linux-amd64 build-linux-arm64 \

@@ -1,65 +1,73 @@
 package metrics
 
-import runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
+import (
+	"bufio"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+)
 
-type PsiMetrics struct {
+type PsiData struct {
 	Total  uint64  `json:"total,omitempty"`
 	Avg10  float64 `json:"avg10,omitempty"`
 	Avg60  float64 `json:"avg60,omitempty"`
 	Avg300 float64 `json:"avg300,omitempty"`
 }
 
-func extractPsiMetrics(psiData *runtimeapi.PsiData) PsiMetrics {
-	if psiData == nil {
-		return PsiMetrics{}
-	}
-
-	return PsiMetrics{
-		Total:  psiData.Total,
-		Avg10:  psiData.Avg10,
-		Avg60:  psiData.Avg60,
-		Avg300: psiData.Avg300,
-	}
+type PsiMetrics struct {
+	Resource string
+	Some     PsiData
+	Full     PsiData
 }
 
-func SafePsiSomeCpuMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Cpu == nil || stats.Cpu.Psi == nil {
-		return PsiMetrics{}
+func SafePsiMetrics(path string) PsiMetrics {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("Failed to open metrics file: %v", err)
 	}
-	return extractPsiMetrics(stats.Cpu.Psi.Some)
-}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("error closing %s: %v", path, err.Error())
+		}
+	}(file)
 
-func SafePsiFullCpuMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Cpu == nil || stats.Cpu.Psi == nil {
-		return PsiMetrics{}
-	}
-	return extractPsiMetrics(stats.Cpu.Psi.Full)
-}
+	scanner := bufio.NewScanner(file)
+	metrics := PsiMetrics{Resource: strings.TrimPrefix(path, "/proc/pressure/")}
 
-func SafePsiSomeMemoryMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Memory == nil || stats.Memory.Psi == nil {
-		return PsiMetrics{}
-	}
-	return extractPsiMetrics(stats.Memory.Psi.Some)
-}
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Fields(line)
+		if len(parts) < 5 {
+			continue
+		}
 
-func SafePsiFullMemoryMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Memory == nil || stats.Memory.Psi == nil {
-		return PsiMetrics{}
-	}
-	return extractPsiMetrics(stats.Memory.Psi.Full)
-}
+		entry := PsiData{}
+		for _, part := range parts[1:] {
+			kv := strings.Split(part, "=")
+			if len(kv) != 2 {
+				continue
+			}
+			switch kv[0] {
+			case "avg10":
+				entry.Avg10, _ = strconv.ParseFloat(kv[1], 64)
+			case "avg60":
+				entry.Avg60, _ = strconv.ParseFloat(kv[1], 64)
+			case "avg300":
+				entry.Avg300, _ = strconv.ParseFloat(kv[1], 64)
+			case "total":
+				entry.Total, _ = strconv.ParseUint(kv[1], 10, 64)
+			}
+		}
 
-func SafePsiSomeIoMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Io == nil || stats.Io.Psi == nil {
-		return PsiMetrics{}
+		switch parts[0] {
+		case "some":
+			metrics.Some = entry
+		case "full":
+			metrics.Full = entry
+		}
 	}
-	return extractPsiMetrics(stats.Io.Psi.Some)
-}
 
-func SafePsiFullIoMetrics(stats *runtimeapi.ContainerStats) PsiMetrics {
-	if stats.Io == nil || stats.Io.Psi == nil {
-		return PsiMetrics{}
-	}
-	return extractPsiMetrics(stats.Io.Psi.Full)
+	return metrics
 }
