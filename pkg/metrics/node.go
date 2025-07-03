@@ -9,6 +9,35 @@ import (
 	"time"
 )
 
+type NodeMetrics struct {
+	Hostname        string `json:"hostname,omitempty"`
+	Uptime          uint64 `json:"uptime,omitempty"`
+	BootTime        uint64 `json:"boot_time,omitempty"`
+	Procs           uint64 `json:"procs,omitempty"`
+	OS              string `json:"os,omitempty"`
+	Platform        string `json:"platform,omitempty"`
+	PlatformFamily  string `json:"platform_family,omitempty"`
+	PlatformVersion string `json:"platform_version,omitempty"`
+	KernelVersion   string `json:"kernel_version,omitempty"`
+	KernelArch      string `json:"kernel_arch,omitempty"`
+	HostID          string `json:"host_id,omitempty"`
+
+	CPUModel        string  `json:"cpu_model,omitempty"`
+	CPUCores        int32   `json:"cpu_cores,omitempty"`
+	CPUUsagePercent float64 `json:"cpu_usage_percent,omitempty"`
+
+	TotalMemory    uint64  `json:"total_memory,omitempty"`
+	FreeMemory     uint64  `json:"free_memory,omitempty"`
+	UsedMemory     uint64  `json:"used_memory,omitempty"`
+	MemoryUsedPerc float64 `json:"memory_used_perc,omitempty"`
+
+	PsiCpuMetrics    PsiMetrics `json:"psi_cpu_metrics,omitempty"`
+	PsiMemoryMetrics PsiMetrics `json:"psi_memory_metrics,omitempty"`
+	PsiIoMetrics     PsiMetrics `json:"psi_io_metrics,omitempty"`
+
+	NetworkInterfaces []net.InterfaceStat `json:"network_interfaces,omitempty"`
+}
+
 func SafeNodeMetrics(ctx context.Context) (*NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
@@ -53,6 +82,10 @@ func SafeNodeMetrics(ctx context.Context) (*NodeMetrics, error) {
 		FreeMemory:     memInfo.Free,
 		UsedMemory:     memInfo.Used,
 		MemoryUsedPerc: memInfo.UsedPercent,
+
+		PsiCpuMetrics:    SafePsiMetrics("/proc/pressure/cpu"),
+		PsiMemoryMetrics: SafePsiMetrics("/proc/pressure/memory"),
+		PsiIoMetrics:     SafePsiMetrics("/proc/pressure/io"),
 
 		NetworkInterfaces: netInfo,
 	}

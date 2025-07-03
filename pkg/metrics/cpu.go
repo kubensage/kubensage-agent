@@ -6,11 +6,9 @@ import (
 )
 
 type CpuMetrics struct {
-	Timestamp            int64      `json:"timestamp,omitempty"`
-	UsageCoreNanoSeconds int64      `json:"usage_core_nano_seconds,omitempty"`
-	UsageNanoCores       int64      `json:"usage_nano_cores,omitempty"`
-	PsiSome              PsiMetrics `json:"psi_some_metrics,omitempty"`
-	PsiFull              PsiMetrics `json:"psi_full_metrics,omitempty"`
+	Timestamp            int64 `json:"timestamp,omitempty"`
+	UsageCoreNanoSeconds int64 `json:"usage_core_nano_seconds,omitempty"`
+	UsageNanoCores       int64 `json:"usage_nano_cores,omitempty"`
 }
 
 func SafeCpuMetrics(stats *runtimeapi.ContainerStats) CpuMetrics {
@@ -22,8 +20,6 @@ func SafeCpuMetrics(stats *runtimeapi.ContainerStats) CpuMetrics {
 		Timestamp:            stats.Cpu.Timestamp,
 		UsageCoreNanoSeconds: utils.SafeUint64ValueToInt64OrDefault(stats.Cpu.UsageCoreNanoSeconds, -1),
 		UsageNanoCores:       utils.SafeUint64ValueToInt64OrDefault(stats.Cpu.UsageNanoCores, -1),
-		PsiSome:              SafePsiSomeCpuMetrics(stats),
-		PsiFull:              SafePsiFullCpuMetrics(stats),
 	}
 
 	return metrics
