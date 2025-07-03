@@ -1,10 +1,10 @@
-package model
+package metrics
 
 import "github.com/shirou/gopsutil/v3/net"
 
 type Metrics struct {
-	NodeMetrics NodeMetrics  `json:"node_metrics,omitempty"`
-	PodMetrics  []PodMetrics `json:"pod_metrics,omitempty"`
+	NodeMetrics *NodeMetrics  `json:"node_metrics,omitempty"`
+	PodMetrics  []*PodMetrics `json:"pod_metrics,omitempty"`
 }
 
 type NodeMetrics struct {
@@ -41,7 +41,7 @@ type PodMetrics struct {
 	State     string `json:"state,omitempty"`
 	Attempt   uint32 `json:"attempt,omitempty"`
 
-	ContainerMetrics []ContainerMetrics `json:"container_metrics,omitempty"`
+	ContainerMetrics []*ContainerMetrics `json:"container_metrics,omitempty"`
 }
 
 type ContainerMetrics struct {
@@ -56,50 +56,5 @@ type ContainerMetrics struct {
 	MemoryMetrics     MemoryMetrics     `json:"memory_metrics,omitempty"`
 	FileSystemMetrics FileSystemMetrics `json:"file_system_metrics,omitempty"`
 	SwapMetrics       SwapMetrics       `json:"swap_metrics,omitempty"`
-	IOMetrics         IOMetrics         `json:"io_metrics,omitempty"`
-}
-
-type CpuMetrics struct {
-	Timestamp            int64      `json:"timestamp,omitempty"`
-	UsageCoreNanoSeconds uint64     `json:"usage_core_nano_seconds,omitempty"`
-	UsageNanoCores       uint64     `json:"usage_nano_cores,omitempty"`
-	PsiSome              PsiMetrics `json:"psi_some_metrics,omitempty"`
-	PsiFull              PsiMetrics `json:"psi_full_metrics,omitempty"`
-}
-
-type MemoryMetrics struct {
-	Timestamp       int64      `json:"timestamp,omitempty"`
-	WorkingSetBytes uint64     `json:"working_set_bytes,omitempty"`
-	AvailableBytes  uint64     `json:"available_bytes,omitempty"`
-	UsageBytes      uint64     `json:"usage_bytes,omitempty"`
-	RssBytes        uint64     `json:"rss_bytes,omitempty"`
-	PageFaults      uint64     `json:"page_faults,omitempty"`
-	MajorPageFaults uint64     `json:"major_page_faults,omitempty"`
-	PsiSome         PsiMetrics `json:"psi_some_metrics,omitempty"`
-	PsiFull         PsiMetrics `json:"psi_full_metrics,omitempty"`
-}
-
-type PsiMetrics struct {
-	Total  uint64  `json:"Total,omitempty"`
-	Avg10  float64 `json:"Avg10,omitempty"`
-	Avg60  float64 `json:"Avg60,omitempty"`
-	Avg300 float64 `json:"Avg300,omitempty"`
-}
-
-type FileSystemMetrics struct {
-	Timestamp  int64  `json:"timestamp,omitempty"`
-	Mountpoint string `json:"mountpoint,omitempty"`
-	UsedBytes  uint64 `json:"used_bytes,omitempty"`
-	InodesUsed uint64 `json:"inodes_used,omitempty"`
-}
-
-type SwapMetrics struct {
-	Timestamp          int64  `json:"timestamp,omitempty"`
-	SwapAvailableBytes uint64 `json:"swap_available_bytes,omitempty"`
-	SwapUsageBytes     uint64 `json:"swap_usage_bytes,omitempty"`
-}
-
-type IOMetrics struct {
-	PsiSome PsiMetrics `json:"psi_some_metrics,omitempty"`
-	PsiFull PsiMetrics `json:"psi_full_metrics,omitempty"`
+	IoMetrics         IoMetrics         `json:"io_metrics,omitempty"`
 }

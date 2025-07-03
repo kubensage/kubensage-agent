@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/kubensage/kubensage-agent/pkg/model"
+	"fmt"
 	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
@@ -16,6 +16,15 @@ import (
 )
 
 func main() {
+	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Errore nell'aprire il file di log:", err)
+		return
+	}
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+
 	// Capture termination signals (e.g., SIGINT, SIGTERM) for clean shutdown of the application
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -24,7 +33,7 @@ func main() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
-	// Create a context that will be passed to Discover function for pod collection
+	// Create a context that will be passed to FillMetrics function for pod collection
 	// It can be cancelled to stop ongoing operations if needed
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -73,24 +82,16 @@ func main() {
 	}
 }
 
-// collectOnce performs a single collection cycle by calling the Discover function
+// collectOnce performs a single collection cycle by calling the FillMetrics function
 // It collects pod information and logs the details as JSON strings
 func collectOnce(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient) error {
-	// Discover pods and their associated information
-	podInfos, err := discovery.Discover(ctx, runtimeClient)
+	// FillMetrics pods and their associated information
+	metrics, err := discovery.FillMetrics(ctx, runtimeClient)
 	if err != nil {
 		return err
 	}
 	// Log the estimated number of pods and containers
-	log.Printf("Processing %d pods, with a total of %d containers.", len(podInfos), sumContainerCount(podInfos))
-
-	nodeInfo, err := discovery.ListNodeInfo(ctx)
-	if err != nil {
-		return err
-	}
-	// Log node info
-	jsonString, _ := utils.ToJsonString(nodeInfo)
-	log.Printf("NodeInfo: %v", jsonString)
+	log.Println(utils.ToJsonString(metrics))
 
 	// Iterate through the discovered pod information and log it
 	/*for _, podInfo := range podInfos {
@@ -106,13 +107,4 @@ func collectOnce(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceCli
 	}*/
 
 	return nil
-}
-
-// Helper function to sum the total number of containers across all pods
-func sumContainerCount(podInfos []model.PodInfo) int {
-	totalContainers := 0
-	for _, podInfo := range podInfos {
-		totalContainers += len(podInfo.Containers)
-	}
-	return totalContainers
 }
