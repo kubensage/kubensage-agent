@@ -1,8 +1,7 @@
-package discovery
+package metrics
 
 import (
 	"context"
-	"github.com/kubensage/kubensage-agent/pkg/model"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -10,7 +9,7 @@ import (
 	"time"
 )
 
-func ListNodeInfo(ctx context.Context) (*model.NodeInfo, error) {
+func SafeNodeMetrics(ctx context.Context) (*NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
@@ -33,7 +32,7 @@ func ListNodeInfo(ctx context.Context) (*model.NodeInfo, error) {
 		return nil, err
 	}
 
-	nodeInfo := &model.NodeInfo{
+	nodeInfo := &NodeMetrics{
 		Hostname:        info.Hostname,
 		Uptime:          info.Uptime,
 		BootTime:        info.BootTime,
