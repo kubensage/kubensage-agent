@@ -16,9 +16,8 @@ type PsiData struct {
 }
 
 type PsiMetrics struct {
-	Resource string
-	Some     PsiData
-	Full     PsiData
+	Some PsiData
+	Full PsiData
 }
 
 func SafePsiMetrics(path string) PsiMetrics {
@@ -34,7 +33,7 @@ func SafePsiMetrics(path string) PsiMetrics {
 	}(file)
 
 	scanner := bufio.NewScanner(file)
-	metrics := PsiMetrics{Resource: strings.TrimPrefix(path, "/proc/pressure/")}
+	var metrics PsiMetrics
 
 	for scanner.Scan() {
 		line := scanner.Text()
