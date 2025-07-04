@@ -1,4 +1,4 @@
-name: Tag
+name: Build and Release
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  tag:
-    name: Create Tag
+  tag-build-release:
+    name: Tag, Build and Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,55 +15,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Bump version and push tag
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Bump version and create tag
+        id: tag
         uses: anothrNick/github-tag-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_OWNER: kubensage
           INITIAL_VERSION: 1.0.0
 
-  build:
-    name: Build binaries
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "Latest tag: $TAG"
+          echo "VERSION=$TAG" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.4'
 
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
       - name: Build binaries
         run: make build-all VERSION=${{ env.VERSION }} OUTPUT_DIR=build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubensage-agent-binaries
-          path: build
-
-  release:
-    name: Create GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: kubensage-agent-binaries
-          path: build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
           files: build/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
