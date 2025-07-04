@@ -8,13 +8,11 @@ import (
 	"sync"
 )
 
-// FillMetrics discovers information about the node, pods and containers in the runtime environment.
-func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*m.Metrics, error) {
-	// List all the necessary resources in parallel
+func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*m.Metrics, []error) {
 	var wg sync.WaitGroup
+
 	errChan := make(chan error, 4)
 
-	// Fetch pods, pod stats, containers, and container stats in parallel
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
@@ -34,7 +32,7 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 	go func() {
 		defer wg.Done()
 		var err error
-		pods, err = listPods(ctx, runtimeClient)
+		pods, err = getPods(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list pod sandboxes: %v", err)
 		}
@@ -43,7 +41,7 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 	go func() {
 		defer wg.Done()
 		var err error
-		containers, err = listContainers(ctx, runtimeClient)
+		containers, err = getContainers(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list containers: %v", err)
 		}
@@ -52,25 +50,23 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 	go func() {
 		defer wg.Done()
 		var err error
-		containersStats, err = listContainersStats(ctx, runtimeClient)
+		containersStats, err = getContainersStats(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list containers stats: %v", err)
 		}
 	}()
 
-	// Wait for all fetches to complete
 	wg.Wait()
 
-	// If any error occurred during parallel fetching, return it
-	select {
-	case err := <-errChan:
-		return nil, err
-	default:
+	close(errChan)
+
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
 	}
 
 	var podsMetrics []*m.PodMetrics
 
-	// Map containers by Pod ID for faster lookup
 	containerMap := make(map[string][]*cri.Container)
 	for _, container := range containers {
 		containerMap[container.PodSandboxId] = append(containerMap[container.PodSandboxId], container)
@@ -79,13 +75,12 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 	for _, pod := range pods {
 		var containersMetrics []*m.ContainerMetrics
 
-		// Get all containers associated with the current pod (using pre-built map for faster lookup)
 		containers := containerMap[pod.Id]
 
 		for _, container := range containers {
 			containerStats, err := getContainerStatsByContainerId(containersStats, container.Id)
 			if err != nil {
-				errChan <- fmt.Errorf("failed to get container stats for container %s: %v", container.Id, err)
+				errs = append(errs, fmt.Errorf("failed to get container stats for container %s: %v", container.Id, err))
 			}
 
 			cpuMetrics := m.SafeCpuMetrics(containerStats)
@@ -126,5 +121,5 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 
 	metrics := &m.Metrics{NodeMetrics: nodeMetrics, PodMetrics: podsMetrics}
 
-	return metrics, nil
+	return metrics, errs
 }

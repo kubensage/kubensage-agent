@@ -1,18 +1,23 @@
 package utils
 
 import (
-	"fmt"
-	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
 )
 
-func GrpcClientConnection(socket string) (*grpc.ClientConn, error) {
-	conn, err := grpc.NewClient(socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func AcquireGrpcConnection(socket string) *grpc.ClientConn {
+	connection, err := grpc.NewClient(socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
-		return nil, fmt.Errorf("cri grpc connection error: %v", types.ErrUnexpectedEndOfGroupEmpty.Error())
+		log.Fatalf("failed to connect: %v", err)
 	}
 
-	return conn, nil
+	defer func(conn *grpc.ClientConn) {
+		if err := conn.Close(); err != nil {
+			log.Printf("Failed to close gRPC connection: %v", err)
+		}
+	}(connection)
+
+	return connection
 }

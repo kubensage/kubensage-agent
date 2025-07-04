@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
 	"os"
@@ -15,96 +13,48 @@ import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 )
 
+var TickerDuration = time.Second * 5
+
 func main() {
-	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Errore nell'aprire il file di log:", err)
-		return
-	}
-	defer logFile.Close()
+	utils.SetupLogging("kubensage-agent.log")
 
-	log.SetOutput(logFile)
-
-	// Capture termination signals (e.g., SIGINT, SIGTERM) for clean shutdown of the application
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
-	// Create a ticker that triggers every 5 seconds to periodically collect pod information
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(TickerDuration)
 	defer ticker.Stop()
 
-	// Create a context that will be passed to FillMetrics function for pod collection
-	// It can be cancelled to stop ongoing operations if needed
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Discover the CRI (Container Runtime Interface) socket to connect to the container runtime
 	socket, err := discovery.CriSocketDiscovery()
 	if err != nil {
 		log.Fatalf("Failed to discover CRI socket: %v", err)
 	}
 
-	// Establish a gRPC connection to the discovered CRI socket
-	conn, err := utils.GrpcClientConnection(socket)
-	if err != nil {
-		log.Fatalf("Failed to connect to CRI socket: %v", err)
-	}
-	defer func(conn *grpc.ClientConn) {
-		// Close the gRPC connection upon termination
-		if err := conn.Close(); err != nil {
-			log.Printf("Failed to close gRPC connection: %v", err)
-		}
-	}(conn)
+	grpcConnection := utils.AcquireGrpcConnection(socket)
 
-	// Create the runtime client using the gRPC connection
-	runtimeClient := runtimeapi.NewRuntimeServiceClient(conn)
+	runtimeClient := runtimeapi.NewRuntimeServiceClient(grpcConnection)
 
-	// Log the start of the polling loop
 	log.Println("Starting kubensage-agent loop, polling every 5s...")
 
-	// Enter an infinite loop to periodically collect pod information
 	for {
 		select {
 		case <-sigCh:
-			// Gracefully exit when a termination signal is received
 			log.Println("Termination signal received, exiting.")
 			return
 
+		// Collection section
 		case <-ticker.C:
-			// Start the pod collection in a new goroutine for asynchronous processing
 			go func() {
-				// Call collectOnce function to discover and log pod information
-				if err := collectOnce(ctx, runtimeClient); err != nil {
-					log.Printf("Error in collectOnce: %v", err)
+				metrics, err := discovery.GetAllMetrics(ctx, runtimeClient)
+
+				if err != nil {
+					log.Printf("Failed to get metrics: %v", err)
+				} else {
+					log.Println(utils.ToJsonString(metrics))
 				}
 			}()
 		}
 	}
-}
-
-// collectOnce performs a single collection cycle by calling the FillMetrics function
-// It collects pod information and logs the details as JSON strings
-func collectOnce(ctx context.Context, runtimeClient runtimeapi.RuntimeServiceClient) error {
-	// FillMetrics pods and their associated information
-	metrics, err := discovery.FillMetrics(ctx, runtimeClient)
-	if err != nil {
-		return err
-	}
-	// Log the estimated number of pods and containers
-	log.Println(utils.ToJsonString(metrics))
-
-	// Iterate through the discovered pod information and log it
-	/*for _, podInfo := range podInfos {
-		// Convert the PodInfo struct to a JSON string for logging
-		jsonStr, err := utils.ToJsonString(podInfo)
-		if err != nil {
-			// Log an error if serializing PodInfo to JSON fails
-			log.Printf("Error serializing PodInfo: %v", err)
-			continue
-		}
-		// Log the serialized PodInfo
-		log.Printf("PodInfo: %s", jsonStr)
-	}*/
-
-	return nil
 }
