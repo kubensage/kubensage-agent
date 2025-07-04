@@ -6,18 +6,13 @@ import (
 	"log"
 )
 
+// AcquireGrpcConnection establishes a gRPC connection to the given UNIX socket.
+// It returns an open *grpc.ClientConn. If the connection fails, the program terminates with a fatal log.
+// The caller is responsible for closing the connection.
 func AcquireGrpcConnection(socket string) *grpc.ClientConn {
 	connection, err := grpc.NewClient(socket, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
 	if err != nil {
-		log.Fatalf("failed to connect: %v", err)
+		log.Fatalf("failed to connect to gRPC socket %q: %v", socket, err)
 	}
-
-	defer func(conn *grpc.ClientConn) {
-		if err := conn.Close(); err != nil {
-			log.Printf("Failed to close gRPC connection: %v", err)
-		}
-	}(connection)
-
 	return connection
 }
