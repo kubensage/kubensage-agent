@@ -118,15 +118,10 @@ The output binaries are placed in `.go-builds/`, and versioning is controlled vi
 
 * `make clean`: Removes the `.go-builds` output directory
 
-### 🏷️ Version Tagging
+### 🏷️ Release
 
-To tag a release in Git:
-
-```bash
-make tag TAG=v1.0.5
-```
-
-This will create and push a Git tag with the specified version.
+To tag a release in Git you just need to open a PR to main branch, the CI will create automatically a new TAG and a new
+Release.
 
 ### 🧪 Example
 
