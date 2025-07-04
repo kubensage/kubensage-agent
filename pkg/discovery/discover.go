@@ -6,15 +6,24 @@ import (
 	m "github.com/kubensage/kubensage-agent/pkg/metrics"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"sync"
+	"time"
 )
 
-// FillMetrics discovers information about the node, pods and containers in the runtime environment.
-func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*m.Metrics, error) {
-	// List all the necessary resources in parallel
+// GetAllMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
+// The collection process is parallelized across four sources:
+// - Node metrics (CPU, memory, PSI, etc.)
+// - Pod sandboxes
+// - Containers
+// - Container stats
+//
+// The function returns a populated *Metrics object and a slice of errors that occurred during collection.
+// Partial failures (e.g., missing stats for a container) do not block the overall process.
+func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*m.Metrics, []error) {
 	var wg sync.WaitGroup
+
+	// Error channel for concurrent metric collection
 	errChan := make(chan error, 4)
 
-	// Fetch pods, pod stats, containers, and container stats in parallel
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
@@ -22,77 +31,82 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 
 	wg.Add(4)
 
+	// Collect node-level metrics concurrently
 	go func() {
 		defer wg.Done()
 		var err error
-		nodeMetrics, err = m.SafeNodeMetrics(ctx)
+		nodeMetrics, err = m.SafeNodeMetrics(ctx, 1*time.Second)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to list containers stats: %v", err)
+			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
 		}
 	}()
 
+	// List all pod sandboxes
 	go func() {
 		defer wg.Done()
 		var err error
-		pods, err = listPods(ctx, runtimeClient)
+		pods, err = getPods(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list pod sandboxes: %v", err)
 		}
 	}()
 
+	// List all containers
 	go func() {
 		defer wg.Done()
 		var err error
-		containers, err = listContainers(ctx, runtimeClient)
+		containers, err = getContainers(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list containers: %v", err)
 		}
 	}()
 
+	// Get stats for all containers
 	go func() {
 		defer wg.Done()
 		var err error
-		containersStats, err = listContainersStats(ctx, runtimeClient)
+		containersStats, err = getContainersStats(ctx, runtimeClient)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to list containers stats: %v", err)
+			errChan <- fmt.Errorf("failed to list container stats: %v", err)
 		}
 	}()
 
-	// Wait for all fetches to complete
 	wg.Wait()
+	close(errChan)
 
-	// If any error occurred during parallel fetching, return it
-	select {
-	case err := <-errChan:
-		return nil, err
-	default:
+	// Collect all async errors into a slice
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
 	}
 
 	var podsMetrics []*m.PodMetrics
 
-	// Map containers by Pod ID for faster lookup
+	// Create a mapping from pod ID to its associated containers
 	containerMap := make(map[string][]*cri.Container)
 	for _, container := range containers {
 		containerMap[container.PodSandboxId] = append(containerMap[container.PodSandboxId], container)
 	}
 
+	// Build pod metrics from pod and container data
 	for _, pod := range pods {
 		var containersMetrics []*m.ContainerMetrics
-
-		// Get all containers associated with the current pod (using pre-built map for faster lookup)
 		containers := containerMap[pod.Id]
 
 		for _, container := range containers {
+			// Match stats for each container
 			containerStats, err := getContainerStatsByContainerId(containersStats, container.Id)
 			if err != nil {
-				errChan <- fmt.Errorf("failed to get container stats for container %s: %v", container.Id, err)
+				errs = append(errs, fmt.Errorf("failed to get container stats for container %s: %v", container.Id, err))
 			}
 
+			// Extract metrics from stats object (safe access wrappers)
 			cpuMetrics := m.SafeCpuMetrics(containerStats)
 			memoryMetrics := m.SafeMemoryMetrics(containerStats)
 			fileSystemMetrics := m.SafeFileSystemMetrics(containerStats)
 			swapMetrics := m.SafeSwapMetrics(containerStats)
 
+			// Build container metric object
 			containerMetrics := &m.ContainerMetrics{
 				Id:                container.Id,
 				Name:              container.Metadata.Name,
@@ -109,6 +123,7 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 			containersMetrics = append(containersMetrics, containerMetrics)
 		}
 
+		// Build pod-level metric from collected container metrics
 		podMetric := &m.PodMetrics{
 			Id:               pod.Id,
 			Uid:              pod.Metadata.Uid,
@@ -121,10 +136,13 @@ func FillMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*
 		}
 
 		podsMetrics = append(podsMetrics, podMetric)
-
 	}
 
-	metrics := &m.Metrics{NodeMetrics: nodeMetrics, PodMetrics: podsMetrics}
+	// Final assembled metrics object
+	metrics := &m.Metrics{
+		NodeMetrics: nodeMetrics,
+		PodMetrics:  podsMetrics,
+	}
 
-	return metrics, nil
+	return metrics, errs
 }

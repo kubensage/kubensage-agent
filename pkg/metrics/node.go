@@ -9,36 +9,46 @@ import (
 	"time"
 )
 
+// NodeMetrics represents a full set of system-level metrics for a Kubernetes node.
+// It includes metadata, CPU/memory usage, PSI (Pressure Stall Information), and network interfaces.
 type NodeMetrics struct {
-	Hostname        string `json:"hostname,omitempty"`
-	Uptime          uint64 `json:"uptime,omitempty"`
-	BootTime        uint64 `json:"boot_time,omitempty"`
-	Procs           uint64 `json:"procs,omitempty"`
-	OS              string `json:"os,omitempty"`
-	Platform        string `json:"platform,omitempty"`
-	PlatformFamily  string `json:"platform_family,omitempty"`
-	PlatformVersion string `json:"platform_version,omitempty"`
-	KernelVersion   string `json:"kernel_version,omitempty"`
-	KernelArch      string `json:"kernel_arch,omitempty"`
-	HostID          string `json:"host_id,omitempty"`
+	// Basic host metadata
+	Hostname        string `json:"hostname,omitempty"`         // Hostname of the node
+	Uptime          uint64 `json:"uptime,omitempty"`           // Uptime in seconds
+	BootTime        uint64 `json:"boot_time,omitempty"`        // Boot time (Unix timestamp)
+	Procs           uint64 `json:"procs,omitempty"`            // Number of running processes
+	OS              string `json:"os,omitempty"`               // OS name (e.g., "linux")
+	Platform        string `json:"platform,omitempty"`         // Distribution name (e.g., "ubuntu")
+	PlatformFamily  string `json:"platform_family,omitempty"`  // OS family (e.g., "debian")
+	PlatformVersion string `json:"platform_version,omitempty"` // OS version (e.g., "25.04")
+	KernelVersion   string `json:"kernel_version,omitempty"`   // Kernel version (e.g., "6.14.0-22-generic")
+	KernelArch      string `json:"kernel_arch,omitempty"`      // CPU architecture (e.g., "x86_64")
+	HostID          string `json:"host_id,omitempty"`          // Machine ID (UUID or host ID)
 
-	CPUModel        string  `json:"cpu_model,omitempty"`
-	CPUCores        int32   `json:"cpu_cores,omitempty"`
-	CPUUsagePercent float64 `json:"cpu_usage_percent,omitempty"`
+	// CPU metrics
+	CPUModel        string  `json:"cpu_model,omitempty"`         // CPU model name
+	CPUCores        int32   `json:"cpu_cores,omitempty"`         // Number of logical CPU cores
+	CPUUsagePercent float64 `json:"cpu_usage_percent,omitempty"` // Total CPU usage over a 1-second window
 
-	TotalMemory    uint64  `json:"total_memory,omitempty"`
-	FreeMemory     uint64  `json:"free_memory,omitempty"`
-	UsedMemory     uint64  `json:"used_memory,omitempty"`
-	MemoryUsedPerc float64 `json:"memory_used_perc,omitempty"`
+	// Memory metrics
+	TotalMemory    uint64  `json:"total_memory,omitempty"`     // Total physical memory in bytes
+	FreeMemory     uint64  `json:"free_memory,omitempty"`      // Free memory in bytes
+	UsedMemory     uint64  `json:"used_memory,omitempty"`      // Used memory in bytes
+	MemoryUsedPerc float64 `json:"memory_used_perc,omitempty"` // Used memory as a percentage of total
 
-	PsiCpuMetrics    PsiMetrics `json:"psi_cpu_metrics,omitempty"`
-	PsiMemoryMetrics PsiMetrics `json:"psi_memory_metrics,omitempty"`
-	PsiIoMetrics     PsiMetrics `json:"psi_io_metrics,omitempty"`
+	// PSI metrics (Pressure Stall Information from /proc/pressure)
+	PsiCpuMetrics    PsiMetrics `json:"psi_cpu_metrics,omitempty"`    // CPU pressure stall data
+	PsiMemoryMetrics PsiMetrics `json:"psi_memory_metrics,omitempty"` // Memory pressure stall data
+	PsiIoMetrics     PsiMetrics `json:"psi_io_metrics,omitempty"`     // I/O pressure stall data
 
-	NetworkInterfaces []net.InterfaceStat `json:"network_interfaces,omitempty"`
+	// Network interfaces (excluding stats like RX/TX bytes)
+	NetworkInterfaces []net.InterfaceStat `json:"network_interfaces,omitempty"` // List of detected network interfaces
 }
 
-func SafeNodeMetrics(ctx context.Context) (*NodeMetrics, error) {
+// SafeNodeMetrics collects node-level system metrics using gopsutil and /proc/pressure.
+// It gathers host metadata, CPU/memory usage, PSI metrics, and network interface details.
+// Returns a NodeMetrics struct on success or an error if any critical system call fails.
+func SafeNodeMetrics(ctx context.Context, interval time.Duration) (*NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
@@ -49,7 +59,8 @@ func SafeNodeMetrics(ctx context.Context) (*NodeMetrics, error) {
 		return nil, err
 	}
 
-	cpuPercent, err := cpu.PercentWithContext(ctx, 1*time.Second, false)
+	// Get CPU usage over 1 second interval (non-per-core)
+	cpuPercent, err := cpu.PercentWithContext(ctx, interval, false)
 
 	memInfo, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {

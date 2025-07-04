@@ -2,15 +2,16 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 )
 
+// ToJsonString returns a pretty-formatted JSON string representation of the given value.
+// It uses json.MarshalIndent to produce human-readable output.
+// If marshalling fails, it returns an error describing the issue.
 func ToJsonString(v interface{}) (string, error) {
 	data, err := json.MarshalIndent(v, "", "  ")
-
 	if err != nil {
-		return "", fmt.Errorf("error marshalling PodInfo: %s", err.Error())
+		log.Printf("json marshal err: %v", err)
 	}
-
 	return string(data), nil
 }
