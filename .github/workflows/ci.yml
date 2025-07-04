@@ -2,14 +2,44 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 jobs:
+  tag:
+    name: Create Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          echo "Latest tag: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+      - name: Bump version and create tag
+        id: create_tag
+        run: |
+          latest=${{ steps.get_tag.outputs.latest_tag }}
+          IFS='.' read -r -a parts <<< "${latest#v}"
+          major=${parts[0]}
+          minor=${parts[1]}
+          patch=${parts[2]}
+          new_tag="v$major.$minor.$((patch + 1))"
+          echo "New tag: $new_tag"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag $new_tag
+          git push origin $new_tag
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
   build:
     name: Build binaries
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
