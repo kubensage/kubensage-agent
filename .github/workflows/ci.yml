@@ -33,7 +33,7 @@ jobs:
           go-version: '1.24.4'
       - name: Extract version from tag
         id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Build binaries
         run: make build-all VERSION=${{ env.VERSION }} OUTPUT_DIR=build
       - name: Upload artifacts
