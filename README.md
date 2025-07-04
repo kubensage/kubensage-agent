@@ -96,8 +96,7 @@ Handles SIGINT/SIGTERM gracefully.
 ## 🛠️ Building the Agent
 
 To build the `kubensage-agent` binary for multiple platforms, a `Makefile` is provided.
-The output binaries are placed in `.go-builds/`, and versioning is controlled via the `VERSION` variable (defaults to
-`1.0.4`).
+The output binaries are placed in `.go-builds/`, and versioning is controlled via the `VERSION` variable.
 
 ### 🔧 Available Make Targets
 
