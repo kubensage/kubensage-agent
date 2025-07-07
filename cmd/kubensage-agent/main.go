@@ -36,6 +36,7 @@ func main() {
 	logMaxAge := flag.Int("log-max-age", 30, "Maximum number of days to retain old log files")
 	logCompress := flag.Bool("log-compress", true, "Whether to compress rotated log files")
 
+	relayAddress := flag.String("relay-address", "", "The address of the relay grpc server")
 	flag.Parse()
 
 	// Setup logging
@@ -58,6 +59,10 @@ func main() {
 		zap.Int("max_age_days", *logMaxAge),
 		zap.Bool("compress", *logCompress),
 	)
+
+	if *relayAddress == "" {
+		logger.Fatal("Missing required flag: --relay-address")
+	}
 
 	// Setup signal handler for graceful shutdown (SIGINT or SIGTERM)
 	sigCh := make(chan os.Signal, 1)
