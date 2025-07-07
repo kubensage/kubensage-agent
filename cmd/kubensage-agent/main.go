@@ -28,11 +28,18 @@ var RelayGrpcServerAddress = "localhost:50051"
 // It periodically collects system and container-level metrics by querying the CRI runtime via gRPC.
 // Collected metrics are logged and can be forwarded by a relay to monitoring systems like Prometheus.
 func main() {
-	// Setup logging
+	// === Logging flags ===
 	logLevel := flag.String("log-level", "info", "Set log level: debug, info, warn, error")
+	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log", "Path to log file")
+	logMaxSize := flag.Int("log-max-size", 10, "Maximum size in MB before rotation")
+	logMaxBackups := flag.Int("log-max-backups", 5, "Maximum number of old log files to retain")
+	logMaxAge := flag.Int("log-max-age", 30, "Maximum number of days to retain old log files")
+	logCompress := flag.Bool("log-compress", true, "Whether to compress rotated log files")
+
 	flag.Parse()
 
-	logger, err := utils.NewLogger(*logLevel)
+	// Setup logging
+	logger, err := utils.NewLogger(logLevel, logFile, logMaxSize, logMaxBackups, logMaxAge, logCompress)
 	if err != nil {
 		log.Fatalf("Failed to create logger: %v", err)
 	}

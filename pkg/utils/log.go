@@ -7,18 +7,18 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func NewLogger(logLevel string) (*zap.Logger, error) {
+func NewLogger(logLevel *string, file *string, size *int, backups *int, age *int, compress *bool) (*zap.Logger, error) {
 	level := zapcore.InfoLevel
-	if err := (&level).UnmarshalText([]byte(logLevel)); err != nil {
+	if err := (&level).UnmarshalText([]byte(*logLevel)); err != nil {
 		return nil, fmt.Errorf("invalid log level: %w", err)
 	}
 
 	writer := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   "/var/log/kubensage/kubensage-agent.log",
-		MaxSize:    10,
-		MaxBackups: 5,
-		MaxAge:     30,
-		Compress:   true,
+		Filename:   *file,
+		MaxSize:    *size,
+		MaxBackups: *backups,
+		MaxAge:     *age,
+		Compress:   *compress,
 	})
 
 	encoderCfg := zap.NewProductionEncoderConfig()
