@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/kubensage/kubensage-agent/pkg/converter"
 	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/kubensage/kubensage-agent/pkg/discovery"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
+	pb "github.com/kubensage/kubensage-agent/proto/gen"
 )
 
 // TickerDuration defines how often metrics are collected from the CRI runtime.
@@ -49,18 +51,28 @@ func main() {
 	}
 
 	// Establish gRPC connection to CRI runtime
-	grpcConnection := utils.AcquireGrpcConnection(socket)
+	grpcCriSocketConnection := utils.AcquireGrpcConnection(socket)
 	defer func(grpcConnection *grpc.ClientConn) {
 		err := grpcConnection.Close()
 		if err != nil {
-			log.Fatalf("Failed to close gRPC connection: %v", err)
+			log.Fatalf("Failed to close gRPC connection for CRI socket: %v", err)
 		}
-	}(grpcConnection)
+	}(grpcCriSocketConnection)
 
 	// Initialize CRI runtime client
-	runtimeClient := runtimeapi.NewRuntimeServiceClient(grpcConnection)
+	runtimeClient := runtimeapi.NewRuntimeServiceClient(grpcCriSocketConnection)
 
 	log.Println("Starting kubensage-agent loop, polling every 5s...")
+
+	grpcRelayConnection := utils.AcquireGrpcConnection("localhost:50051")
+	defer func(grpcConnection *grpc.ClientConn) {
+		err := grpcConnection.Close()
+		if err != nil {
+			log.Fatalf("Failed to close gRPC connection for relay: %v", err)
+		}
+	}(grpcRelayConnection)
+
+	relayClient := pb.NewMetricsServiceClient(grpcRelayConnection)
 
 	// Main loop: respond to signals or perform periodic collection
 	for {
@@ -72,16 +84,29 @@ func main() {
 		// On each tick, collect metrics asynchronously
 		case <-ticker.C:
 			go func() {
-				metrics, err := discovery.GetAllMetrics(ctx, runtimeClient)
+				metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient)
 
-				if err != nil {
-					log.Printf("Failed to get metrics: %v", err)
+				if errs != nil {
+					log.Printf("Failed to get metrics: %v", errs)
 					return
 				}
 
+				converted, err := converter.ConvertToProto(metrics)
+				if err != nil {
+					log.Printf("Failed to convert metrics: %v", err)
+					return
+				}
+
+				ack, err := relayClient.SendMetrics(ctx, converted)
+				if err != nil {
+					log.Printf("Error sending metrics to relay server: %v", err)
+					return
+				}
+				log.Printf("Relay server acknowledged: %s", ack.Message)
+
 				// Serialize metrics as JSON for debugging/logging
-				jsonStr, _ := utils.ToJsonString(metrics)
-				log.Println(jsonStr)
+				/*jsonStr, _ := utils.ToJsonString(metrics)
+				log.Println(jsonStr)*/
 			}()
 		}
 	}
