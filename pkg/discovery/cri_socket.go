@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -24,12 +23,10 @@ var criSocketCandidates = map[string][]string{
 // CriSocketDiscovery attempts to detect the active CRI runtime socket by scanning known paths.
 // It returns the full socket URI (e.g., "unix:///run/containerd/containerd.sock") if successful.
 // If no known socket is found, it returns an error.
-// The function also logs the detected runtime for diagnostic purposes.
 func CriSocketDiscovery() (string, error) {
-	for runtime, paths := range criSocketCandidates {
+	for _, paths := range criSocketCandidates {
 		for _, p := range paths {
 			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
-				log.Printf("Detected CRI runtime: %s (socket: %s)", runtime, p)
 				return "unix://" + p, nil
 			}
 		}
