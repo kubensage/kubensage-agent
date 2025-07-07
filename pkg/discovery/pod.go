@@ -12,8 +12,18 @@ import (
 func getPods(
 	ctx context.Context,
 	runtimeClient runtimeapi.RuntimeServiceClient,
+	getOnlyReady bool,
 ) ([]*runtimeapi.PodSandbox, error) {
-	resp, err := runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{})
+	PodSandboxFilter := &runtimeapi.PodSandboxFilter{State: &runtimeapi.PodSandboxStateValue{State: runtimeapi.PodSandboxState_SANDBOX_READY}}
+
+	var resp *runtimeapi.ListPodSandboxResponse
+	var err error
+
+	if getOnlyReady {
+		resp, err = runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{Filter: PodSandboxFilter})
+	} else {
+		resp, err = runtimeClient.ListPodSandbox(ctx, &runtimeapi.ListPodSandboxRequest{})
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pod sandboxes: %v", err.Error())
 	}

@@ -46,7 +46,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 	go func() {
 		defer wg.Done()
 		var err error
-		pods, err = getPods(ctx, runtimeClient)
+		pods, err = getPods(ctx, runtimeClient, true)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list pod sandboxes: %v", err)
 		}
