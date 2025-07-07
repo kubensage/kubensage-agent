@@ -40,6 +40,11 @@ jobs:
         with:
           go-version: '1.24.4'
 
+      - name: Install protoc
+        run: |
+          sudo apt update
+          sudo apt install -y protobuf-compiler
+
       - name: Build binaries
         run: make build-all VERSION=${{ env.VERSION }} OUTPUT_DIR=build
 
