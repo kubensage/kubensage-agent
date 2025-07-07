@@ -66,7 +66,7 @@ func main() {
 
 	// Establish gRPC connection to CRI runtime
 	logger.Info("Establishing connection to CRI socket", zap.String("socket", socket))
-	grpcCriSocketConnection := utils.AcquireGrpcConnection(socket)
+	grpcCriSocketConnection := utils.AcquireGrpcConnection(socket, *logger)
 	defer func(grpcConnection *grpc.ClientConn) {
 		err := grpcConnection.Close()
 		if err != nil {
@@ -79,7 +79,7 @@ func main() {
 	runtimeClient := runtimeapi.NewRuntimeServiceClient(grpcCriSocketConnection)
 
 	logger.Info("Establishing connection to relay GRPC server", zap.String("socket", RelayGrpcServerAddress))
-	grpcRelayConnection := utils.AcquireGrpcConnection(RelayGrpcServerAddress)
+	grpcRelayConnection := utils.AcquireGrpcConnection(RelayGrpcServerAddress, *logger)
 	defer func(grpcConnection *grpc.ClientConn) {
 		err := grpcConnection.Close()
 		if err != nil {
@@ -101,7 +101,7 @@ func main() {
 		// On each tick, collect metrics asynchronously
 		case <-ticker.C:
 			go func() {
-				metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient)
+				metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, *logger)
 
 				if errs != nil {
 					var errStrs []string

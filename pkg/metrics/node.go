@@ -6,6 +6,7 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -48,7 +49,7 @@ type NodeMetrics struct {
 // SafeNodeMetrics collects node-level system metrics using gopsutil and /proc/pressure.
 // It gathers host metadata, CPU/memory usage, PSI metrics, and network interface details.
 // Returns a NodeMetrics struct on success or an error if any critical system call fails.
-func SafeNodeMetrics(ctx context.Context, interval time.Duration) (*NodeMetrics, error) {
+func SafeNodeMetrics(ctx context.Context, interval time.Duration, logger zap.Logger) (*NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
@@ -94,9 +95,9 @@ func SafeNodeMetrics(ctx context.Context, interval time.Duration) (*NodeMetrics,
 		UsedMemory:     memInfo.Used,
 		MemoryUsedPerc: memInfo.UsedPercent,
 
-		PsiCpuMetrics:    SafePsiMetrics("/proc/pressure/cpu"),
-		PsiMemoryMetrics: SafePsiMetrics("/proc/pressure/memory"),
-		PsiIoMetrics:     SafePsiMetrics("/proc/pressure/io"),
+		PsiCpuMetrics:    SafePsiMetrics("/proc/pressure/cpu", logger),
+		PsiMemoryMetrics: SafePsiMetrics("/proc/pressure/memory", logger),
+		PsiIoMetrics:     SafePsiMetrics("/proc/pressure/io", logger),
 
 		NetworkInterfaces: netInfo,
 	}
