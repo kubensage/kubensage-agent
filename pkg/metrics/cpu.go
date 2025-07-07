@@ -8,9 +8,9 @@ import (
 // CpuMetrics holds CPU usage statistics extracted from CRI ContainerStats.
 // Values are normalized as int64, and missing fields are represented by -1.
 type CpuMetrics struct {
-	Timestamp            int64 `json:"timestamp,omitempty"`               // Timestamp of the CPU stat collection
-	UsageCoreNanoSeconds int64 `json:"usage_core_nano_seconds,omitempty"` // Cumulative CPU usage in nanoseconds
-	UsageNanoCores       int64 `json:"usage_nano_cores,omitempty"`        // Instantaneous CPU usage in nano cores
+	Timestamp            int64 // Timestamp of the CPU stat collection
+	UsageCoreNanoSeconds int64 // Cumulative CPU usage in nanoseconds
+	UsageNanoCores       int64 // Instantaneous CPU usage in nano cores
 }
 
 // SafeCpuMetrics safely extracts CPU metrics from a ContainerStats object.
