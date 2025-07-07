@@ -51,6 +51,13 @@ func main() {
 	}(logger)
 
 	logger.Info("Starting Kubensage Agent", zap.String("log_level", logger.Level().String()))
+	logger.Info("Log configuration",
+		zap.String("file", *logFile),
+		zap.Int("max_size_mb", *logMaxSize),
+		zap.Int("max_backups", *logMaxBackups),
+		zap.Int("max_age_days", *logMaxAge),
+		zap.Bool("compress", *logCompress),
+	)
 
 	// Setup signal handler for graceful shutdown (SIGINT or SIGTERM)
 	sigCh := make(chan os.Signal, 1)
