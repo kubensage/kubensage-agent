@@ -11,7 +11,7 @@ type PodMetrics struct {
 	State     string // Pod state (e.g., SANDBOX_READY, SANDBOX_NOTREADY)
 	Attempt   uint32 // Restart attempt count
 
-	ContainerMetrics []*ContainerMetrics `json:"container_metrics,omitempty"` // Metrics for containers in this pod
+	ContainerMetrics []*ContainerMetrics // Metrics for containers in this pod
 }
 
 // ContainerMetrics holds detailed resource metrics and metadata for a single container.
