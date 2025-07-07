@@ -483,9 +483,9 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 
 type CpuMetrics struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp            uint64                 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	UsageNanoCores       uint64                 `protobuf:"varint,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
-	UsageCoreNanoSeconds uint64                 `protobuf:"varint,3,opt,name=usage_core_nano_seconds,json=usageCoreNanoSeconds,proto3" json:"usage_core_nano_seconds,omitempty"`
+	Timestamp            int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	UsageNanoCores       int64                  `protobuf:"varint,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
+	UsageCoreNanoSeconds int64                  `protobuf:"varint,3,opt,name=usage_core_nano_seconds,json=usageCoreNanoSeconds,proto3" json:"usage_core_nano_seconds,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -520,21 +520,21 @@ func (*CpuMetrics) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *CpuMetrics) GetTimestamp() uint64 {
+func (x *CpuMetrics) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
 	return 0
 }
 
-func (x *CpuMetrics) GetUsageNanoCores() uint64 {
+func (x *CpuMetrics) GetUsageNanoCores() int64 {
 	if x != nil {
 		return x.UsageNanoCores
 	}
 	return 0
 }
 
-func (x *CpuMetrics) GetUsageCoreNanoSeconds() uint64 {
+func (x *CpuMetrics) GetUsageCoreNanoSeconds() int64 {
 	if x != nil {
 		return x.UsageCoreNanoSeconds
 	}
@@ -543,13 +543,13 @@ func (x *CpuMetrics) GetUsageCoreNanoSeconds() uint64 {
 
 type MemoryMetrics struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp       uint64                 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	WorkingSetBytes uint64                 `protobuf:"varint,2,opt,name=working_set_bytes,json=workingSetBytes,proto3" json:"working_set_bytes,omitempty"`
-	AvailableBytes  uint64                 `protobuf:"varint,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes      uint64                 `protobuf:"varint,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
-	RssBytes        uint64                 `protobuf:"varint,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
-	PageFaults      uint64                 `protobuf:"varint,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
-	MajorPageFaults uint64                 `protobuf:"varint,7,opt,name=major_page_faults,json=majorPageFaults,proto3" json:"major_page_faults,omitempty"`
+	Timestamp       int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	WorkingSetBytes int64                  `protobuf:"varint,2,opt,name=working_set_bytes,json=workingSetBytes,proto3" json:"working_set_bytes,omitempty"`
+	AvailableBytes  int64                  `protobuf:"varint,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
+	UsageBytes      int64                  `protobuf:"varint,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	RssBytes        int64                  `protobuf:"varint,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
+	PageFaults      int64                  `protobuf:"varint,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
+	MajorPageFaults int64                  `protobuf:"varint,7,opt,name=major_page_faults,json=majorPageFaults,proto3" json:"major_page_faults,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -584,49 +584,49 @@ func (*MemoryMetrics) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *MemoryMetrics) GetTimestamp() uint64 {
+func (x *MemoryMetrics) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetWorkingSetBytes() uint64 {
+func (x *MemoryMetrics) GetWorkingSetBytes() int64 {
 	if x != nil {
 		return x.WorkingSetBytes
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetAvailableBytes() uint64 {
+func (x *MemoryMetrics) GetAvailableBytes() int64 {
 	if x != nil {
 		return x.AvailableBytes
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetUsageBytes() uint64 {
+func (x *MemoryMetrics) GetUsageBytes() int64 {
 	if x != nil {
 		return x.UsageBytes
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetRssBytes() uint64 {
+func (x *MemoryMetrics) GetRssBytes() int64 {
 	if x != nil {
 		return x.RssBytes
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetPageFaults() uint64 {
+func (x *MemoryMetrics) GetPageFaults() int64 {
 	if x != nil {
 		return x.PageFaults
 	}
 	return 0
 }
 
-func (x *MemoryMetrics) GetMajorPageFaults() uint64 {
+func (x *MemoryMetrics) GetMajorPageFaults() int64 {
 	if x != nil {
 		return x.MajorPageFaults
 	}
@@ -635,10 +635,10 @@ func (x *MemoryMetrics) GetMajorPageFaults() uint64 {
 
 type FileSystemMetrics struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     uint64                 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Mountpoint    string                 `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
-	UsedBytes     uint64                 `protobuf:"varint,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
-	InodesUsed    uint64                 `protobuf:"varint,4,opt,name=inodes_used,json=inodesUsed,proto3" json:"inodes_used,omitempty"`
+	UsedBytes     int64                  `protobuf:"varint,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
+	InodesUsed    int64                  `protobuf:"varint,4,opt,name=inodes_used,json=inodesUsed,proto3" json:"inodes_used,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -673,7 +673,7 @@ func (*FileSystemMetrics) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *FileSystemMetrics) GetTimestamp() uint64 {
+func (x *FileSystemMetrics) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
@@ -687,14 +687,14 @@ func (x *FileSystemMetrics) GetMountpoint() string {
 	return ""
 }
 
-func (x *FileSystemMetrics) GetUsedBytes() uint64 {
+func (x *FileSystemMetrics) GetUsedBytes() int64 {
 	if x != nil {
 		return x.UsedBytes
 	}
 	return 0
 }
 
-func (x *FileSystemMetrics) GetInodesUsed() uint64 {
+func (x *FileSystemMetrics) GetInodesUsed() int64 {
 	if x != nil {
 		return x.InodesUsed
 	}
@@ -703,9 +703,9 @@ func (x *FileSystemMetrics) GetInodesUsed() uint64 {
 
 type SwapMetrics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp      uint64                 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	AvailableBytes uint64                 `protobuf:"varint,2,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes     uint64                 `protobuf:"varint,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	Timestamp      int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	AvailableBytes int64                  `protobuf:"varint,2,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
+	UsageBytes     int64                  `protobuf:"varint,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -740,21 +740,21 @@ func (*SwapMetrics) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *SwapMetrics) GetTimestamp() uint64 {
+func (x *SwapMetrics) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
 	return 0
 }
 
-func (x *SwapMetrics) GetAvailableBytes() uint64 {
+func (x *SwapMetrics) GetAvailableBytes() int64 {
 	if x != nil {
 		return x.AvailableBytes
 	}
 	return 0
 }
 
-func (x *SwapMetrics) GetUsageBytes() uint64 {
+func (x *SwapMetrics) GetUsageBytes() int64 {
 	if x != nil {
 		return x.UsageBytes
 	}
@@ -1125,32 +1125,32 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\x12network_interfaces\x18\x16 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\x8b\x01\n" +
 	"\n" +
 	"CpuMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x04R\ttimestamp\x12(\n" +
-	"\x10usage_nano_cores\x18\x02 \x01(\x04R\x0eusageNanoCores\x125\n" +
-	"\x17usage_core_nano_seconds\x18\x03 \x01(\x04R\x14usageCoreNanoSeconds\"\x8d\x02\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12(\n" +
+	"\x10usage_nano_cores\x18\x02 \x01(\x03R\x0eusageNanoCores\x125\n" +
+	"\x17usage_core_nano_seconds\x18\x03 \x01(\x03R\x14usageCoreNanoSeconds\"\x8d\x02\n" +
 	"\rMemoryMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x04R\ttimestamp\x12*\n" +
-	"\x11working_set_bytes\x18\x02 \x01(\x04R\x0fworkingSetBytes\x12'\n" +
-	"\x0favailable_bytes\x18\x03 \x01(\x04R\x0eavailableBytes\x12\x1f\n" +
-	"\vusage_bytes\x18\x04 \x01(\x04R\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12*\n" +
+	"\x11working_set_bytes\x18\x02 \x01(\x03R\x0fworkingSetBytes\x12'\n" +
+	"\x0favailable_bytes\x18\x03 \x01(\x03R\x0eavailableBytes\x12\x1f\n" +
+	"\vusage_bytes\x18\x04 \x01(\x03R\n" +
 	"usageBytes\x12\x1b\n" +
-	"\trss_bytes\x18\x05 \x01(\x04R\brssBytes\x12\x1f\n" +
-	"\vpage_faults\x18\x06 \x01(\x04R\n" +
+	"\trss_bytes\x18\x05 \x01(\x03R\brssBytes\x12\x1f\n" +
+	"\vpage_faults\x18\x06 \x01(\x03R\n" +
 	"pageFaults\x12*\n" +
-	"\x11major_page_faults\x18\a \x01(\x04R\x0fmajorPageFaults\"\x91\x01\n" +
+	"\x11major_page_faults\x18\a \x01(\x03R\x0fmajorPageFaults\"\x91\x01\n" +
 	"\x11FileSystemMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x04R\ttimestamp\x12\x1e\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x1e\n" +
 	"\n" +
 	"mountpoint\x18\x02 \x01(\tR\n" +
 	"mountpoint\x12\x1d\n" +
 	"\n" +
-	"used_bytes\x18\x03 \x01(\x04R\tusedBytes\x12\x1f\n" +
-	"\vinodes_used\x18\x04 \x01(\x04R\n" +
+	"used_bytes\x18\x03 \x01(\x03R\tusedBytes\x12\x1f\n" +
+	"\vinodes_used\x18\x04 \x01(\x03R\n" +
 	"inodesUsed\"u\n" +
 	"\vSwapMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x04R\ttimestamp\x12'\n" +
-	"\x0favailable_bytes\x18\x02 \x01(\x04R\x0eavailableBytes\x12\x1f\n" +
-	"\vusage_bytes\x18\x03 \x01(\x04R\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12'\n" +
+	"\x0favailable_bytes\x18\x02 \x01(\x03R\x0eavailableBytes\x12\x1f\n" +
+	"\vusage_bytes\x18\x03 \x01(\x03R\n" +
 	"usageBytes\"\x95\x03\n" +
 	"\x10ContainerMetrics\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
