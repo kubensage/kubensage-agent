@@ -9,13 +9,13 @@ import (
 // All numeric fields are represented as int64 and default to -1 if the source data is missing.
 
 type MemoryMetrics struct {
-	Timestamp       int64 `json:"timestamp,omitempty"`         // Timestamp of the memory stat collection
-	WorkingSetBytes int64 `json:"working_set_bytes,omitempty"` // "Working set" memory in bytes
-	AvailableBytes  int64 `json:"available_bytes,omitempty"`   // Available memory in bytes
-	UsageBytes      int64 `json:"usage_bytes,omitempty"`       // Total memory usage in bytes
-	RssBytes        int64 `json:"rss_bytes,omitempty"`         // Resident Set Size (non-swapped) in bytes
-	PageFaults      int64 `json:"page_faults,omitempty"`       // Total page faults
-	MajorPageFaults int64 `json:"major_page_faults,omitempty"` // Major page faults (disk access)
+	Timestamp       int64 // Timestamp of the memory stat collection
+	WorkingSetBytes int64 // "Working set" memory in bytes
+	AvailableBytes  int64 // Available memory in bytes
+	UsageBytes      int64 // Total memory usage in bytes
+	RssBytes        int64 // Resident Set Size (non-swapped) in bytes
+	PageFaults      int64 // Total page faults
+	MajorPageFaults int64 // Major page faults (disk access)
 }
 
 // SafeMemoryMetrics safely extracts memory metrics from a ContainerStats object.

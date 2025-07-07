@@ -13,36 +13,36 @@ import (
 // It includes metadata, CPU/memory usage, PSI (Pressure Stall Information), and network interfaces.
 type NodeMetrics struct {
 	// Basic host metadata
-	Hostname        string `json:"hostname,omitempty"`         // Hostname of the node
-	Uptime          uint64 `json:"uptime,omitempty"`           // Uptime in seconds
-	BootTime        uint64 `json:"boot_time,omitempty"`        // Boot time (Unix timestamp)
-	Procs           uint64 `json:"procs,omitempty"`            // Number of running processes
-	OS              string `json:"os,omitempty"`               // OS name (e.g., "linux")
-	Platform        string `json:"platform,omitempty"`         // Distribution name (e.g., "ubuntu")
-	PlatformFamily  string `json:"platform_family,omitempty"`  // OS family (e.g., "debian")
-	PlatformVersion string `json:"platform_version,omitempty"` // OS version (e.g., "25.04")
-	KernelVersion   string `json:"kernel_version,omitempty"`   // Kernel version (e.g., "6.14.0-22-generic")
-	KernelArch      string `json:"kernel_arch,omitempty"`      // CPU architecture (e.g., "x86_64")
-	HostID          string `json:"host_id,omitempty"`          // Machine ID (UUID or host ID)
+	Hostname        string // Hostname of the node
+	Uptime          uint64 // Uptime in seconds
+	BootTime        uint64 // Boot time (Unix timestamp)
+	Procs           uint64 // Number of running processes
+	OS              string // OS name (e.g., "linux")
+	Platform        string // Distribution name (e.g., "ubuntu")
+	PlatformFamily  string // OS family (e.g., "debian")
+	PlatformVersion string // OS version (e.g., "25.04")
+	KernelVersion   string // Kernel version (e.g., "6.14.0-22-generic")
+	KernelArch      string // CPU architecture (e.g., "x86_64")
+	HostID          string // Machine ID (UUID or host ID)
 
 	// CPU metrics
-	CPUModel        string  `json:"cpu_model,omitempty"`         // CPU model name
-	CPUCores        int32   `json:"cpu_cores,omitempty"`         // Number of logical CPU cores
-	CPUUsagePercent float64 `json:"cpu_usage_percent,omitempty"` // Total CPU usage over a 1-second window
+	CPUModel        string  // CPU model name
+	CPUCores        int32   // Number of logical CPU cores
+	CPUUsagePercent float64 // Total CPU usage over a 1-second window
 
 	// Memory metrics
-	TotalMemory    uint64  `json:"total_memory,omitempty"`     // Total physical memory in bytes
-	FreeMemory     uint64  `json:"free_memory,omitempty"`      // Free memory in bytes
-	UsedMemory     uint64  `json:"used_memory,omitempty"`      // Used memory in bytes
-	MemoryUsedPerc float64 `json:"memory_used_perc,omitempty"` // Used memory as a percentage of total
+	TotalMemory    uint64  // Total physical memory in bytes
+	FreeMemory     uint64  // Free memory in bytes
+	UsedMemory     uint64  // Used memory in bytes
+	MemoryUsedPerc float64 // Used memory as a percentage of total
 
 	// PSI metrics (Pressure Stall Information from /proc/pressure)
-	PsiCpuMetrics    PsiMetrics `json:"psi_cpu_metrics,omitempty"`    // CPU pressure stall data
-	PsiMemoryMetrics PsiMetrics `json:"psi_memory_metrics,omitempty"` // Memory pressure stall data
-	PsiIoMetrics     PsiMetrics `json:"psi_io_metrics,omitempty"`     // I/O pressure stall data
+	PsiCpuMetrics    PsiMetrics // CPU pressure stall data
+	PsiMemoryMetrics PsiMetrics // Memory pressure stall data
+	PsiIoMetrics     PsiMetrics // I/O pressure stall data
 
 	// Network interfaces (excluding stats like RX/TX bytes)
-	NetworkInterfaces []net.InterfaceStat `json:"network_interfaces,omitempty"` // List of detected network interfaces
+	NetworkInterfaces []net.InterfaceStat // List of detected network interfaces
 }
 
 // SafeNodeMetrics collects node-level system metrics using gopsutil and /proc/pressure.
