@@ -2,8 +2,8 @@
 
 `kubensage-agent` is a lightweight telemetry agent designed to run on Kubernetes nodes. It collects detailed host- and
 container-level metrics using the Kubernetes CRI (Container Runtime Interface) by establishing a direct gRPC connection
-to the container runtime socket. The collected data is sent to an external relay for enrichment and export to systems
-like Prometheus.
+to the container runtime socket. The collected data is sent via GRPC to an external relay for enrichment and export to
+systems like Prometheus.
 
 ---
 
@@ -14,7 +14,6 @@ like Prometheus.
 * Connects directly to the **CRI runtime socket** using **gRPC** to gather runtime data from `containerd`, `CRI-O`, or
   `dockershim`.
 * Clean, modular Go code with extensibility in mind.
-* Optional gRPC-based relay support (planned).
 
 ---
 
@@ -28,6 +27,10 @@ kubensage-agent/
 ├── Makefile / go.mod / go.sum    # Build system & dependencies
 ├── LICENSE                       # MIT License
 ├── pkg/
+│   ├── converter                 # Custom converter logic for GRPC 
+│   │   ├── container.go
+│   │   ├── metrics.go
+│   │   └── ...
 │   ├── discovery/                # CRI socket detection and metrics gathering
 │   │   ├── container.go
 │   │   ├── cri_socket.go
@@ -40,6 +43,11 @@ kubensage-agent/
 │       ├── grpc.go
 │       ├── json.go
 │       └── ...
+├── proto                         # Proto definitions
+│       ├── gen                   # Generated proto files
+│       │     ├── metrics_grpc.pb.go
+│       │     └── metrics.pb.go
+│       └── metrics.proto
 ```
 
 ---
@@ -86,8 +94,9 @@ The `main.go` runs a periodic collection loop:
 1. Detects the CRI socket (containerd, CRI-O, dockershim)
 2. Opens a **gRPC connection** to the container runtime via the detected socket (e.g.,
    `/run/containerd/containerd.sock`)
-3. Every `5s`, calls `GetAllMetrics()` to collect all available data
-4. Logs metrics as JSON (future: send to relay)
+3. Every `n seconds`, calls `discovery.GetAllMetrics()` to collect all available data
+4. Converts the metrics to Proto
+5. Sends them to the relay, via GRPC
 
 Handles SIGINT/SIGTERM gracefully.
 
@@ -105,6 +114,8 @@ The output binaries are placed in `.go-builds/`, and versioning is controlled vi
     * Linux (amd64, arm64)
     * macOS (amd64, arm64)
     * Windows (amd64)
+
+* `make build-proto`: Compiles -proto files
 
 * `make build-linux-amd64`: Builds for Linux x86\_64
 
@@ -126,10 +137,10 @@ Release.
 ### 🧪 Example
 
 ```bash
-VERSION=1.0.5 make build-linux-amd64
+VERSION=1.0.0 make build-linux-amd64
 ```
 
-This builds `kubensage-agent-1.0.5-linux-amd64` in the `.go-builds/` directory.
+This builds `kubensage-agent-1.0.0-linux-amd64` in the `.go-builds/` directory.
 
 Ensure Go is installed and in your `PATH`, and that you are in the root of the repository when running `make` commands.
 
@@ -140,9 +151,9 @@ Logs are written to `kubensage-agent.log` in append mode. Ensure the agent has r
 ## 📡 Roadmap
 
 * [x] Collect node + container metrics
-* [ ] Structured logging
+* [x] Structured logging
 * [x] PSI support
-* [ ] Agent push to relay
+* [x] Agent push to relay
 * [ ] Systemd service unit for agent deployment
 
 ---
