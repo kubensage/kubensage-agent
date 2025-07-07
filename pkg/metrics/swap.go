@@ -8,9 +8,9 @@ import (
 // SwapMetrics contains swap usage statistics for a container.
 // All fields default to -1 if the underlying data is missing or unavailable.
 type SwapMetrics struct {
-	Timestamp          int64 `json:"timestamp,omitempty"`            // Timestamp of swap stat
-	SwapAvailableBytes int64 `json:"swap_available_bytes,omitempty"` // Available swap in bytes
-	SwapUsageBytes     int64 `json:"swap_usage_bytes,omitempty"`     // Swap used in bytes
+	Timestamp          int64 // Timestamp of swap stat
+	SwapAvailableBytes int64 // Available swap in bytes
+	SwapUsageBytes     int64 // Swap used in bytes
 }
 
 // SafeSwapMetrics safely extracts swap-related metrics from a ContainerStats object.

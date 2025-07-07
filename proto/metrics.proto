@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "/proto/gen";
+
+// --- PSI Metrics ---
+
+message PsiData {
+  uint64 total = 1;
+  double avg10 = 2;
+  double avg60 = 3;
+  double avg300 = 4;
+}
+
+message PsiMetrics {
+  PsiData some = 1;
+  PsiData full = 2;
+}
+
+// --- Network Interfaces ---
+
+message InterfaceAddr {
+  string addr = 1;
+}
+
+message InterfaceStat {
+  int32 index = 1;
+  int32 mtu = 2;
+  string name = 3;
+  string hardwareAddr = 4;
+  repeated string flags = 5;
+  repeated InterfaceAddr addrs = 6;
+}
+
+// --- Node Metrics ---
+
+message NodeMetrics {
+  string hostname = 1;
+  uint64 uptime = 2;
+  uint64 boot_time = 3;
+  uint64 procs = 4;
+  string os = 5;
+  string platform = 6;
+  string platform_family = 7;
+  string platform_version = 8;
+  string kernel_version = 9;
+  string kernel_arch = 10;
+  string host_id = 11;
+
+  string cpu_model = 12;
+  int32 cpu_cores = 13;
+  double cpu_usage_percent = 14;
+
+  uint64 total_memory = 15;
+  uint64 free_memory = 16;
+  uint64 used_memory = 17;
+  double memory_used_perc = 18;
+
+  PsiMetrics psi_cpu_metrics = 19;
+  PsiMetrics psi_memory_metrics = 20;
+  PsiMetrics psi_io_metrics = 21;
+
+  repeated InterfaceStat network_interfaces = 22;
+}
+
+// --- Container Metrics ---
+
+message CpuMetrics {
+  int64 timestamp = 1;
+  int64 usage_nano_cores = 2;
+  int64 usage_core_nano_seconds = 3;
+}
+
+message MemoryMetrics {
+  int64 timestamp = 1;
+  int64 working_set_bytes = 2;
+  int64 available_bytes = 3;
+  int64 usage_bytes = 4;
+  int64 rss_bytes = 5;
+  int64 page_faults = 6;
+  int64 major_page_faults = 7;
+}
+
+message FileSystemMetrics {
+  int64 timestamp = 1;
+  string mountpoint = 2;
+  int64 used_bytes = 3;
+  int64 inodes_used = 4;
+}
+
+message SwapMetrics {
+  int64 timestamp = 1;
+  int64 available_bytes = 2;
+  int64 usage_bytes = 3;
+}
+
+// --- Container (within Pod) ---
+
+message ContainerMetrics {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  int64 created_at = 4;
+  string state = 5;
+  uint32 attempt = 6;
+
+  CpuMetrics cpu_metrics = 7;
+  MemoryMetrics memory_metrics = 8;
+  FileSystemMetrics file_system_metrics = 9;
+  SwapMetrics swap_metrics = 10;
+}
+
+// --- Pod Metrics ---
+
+message PodMetrics {
+  string id = 1;
+  string uid = 2;
+  string name = 3;
+  string namespace = 4;
+  int64 created_at = 5;
+  string state = 6;
+  uint32 attempt = 7;
+
+  repeated ContainerMetrics container_metrics = 8;
+}
+
+// --- Root Metrics Message ---
+
+message Metrics {
+  NodeMetrics node_metrics = 1;
+  repeated PodMetrics pod_metrics = 2;
+}
+
+// --- Service Definition ---
+
+message Ack {
+  string message = 1;
+}
+
+service MetricsService {
+  rpc SendMetrics(Metrics) returns (Ack);
+}

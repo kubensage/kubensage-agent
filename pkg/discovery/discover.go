@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	m "github.com/kubensage/kubensage-agent/pkg/metrics"
+	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ import (
 //
 // The function returns a populated *Metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) (*m.Metrics, []error) {
+func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger zap.Logger) (*m.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
@@ -35,7 +36,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient) 
 	go func() {
 		defer wg.Done()
 		var err error
-		nodeMetrics, err = m.SafeNodeMetrics(ctx, 1*time.Second)
+		nodeMetrics, err = m.SafeNodeMetrics(ctx, 1*time.Second, logger)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
 		}

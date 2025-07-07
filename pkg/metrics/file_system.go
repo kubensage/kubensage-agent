@@ -8,10 +8,10 @@ import (
 // FileSystemMetrics represents usage statistics for a container's writable layer.
 // All fields are safe defaults: numerical fields fallback to -1 if missing.
 type FileSystemMetrics struct {
-	Timestamp  int64  `json:"timestamp,omitempty"`   // Timestamp of the filesystem stat
-	Mountpoint string `json:"mountpoint,omitempty"`  // Filesystem mount path
-	UsedBytes  int64  `json:"used_bytes,omitempty"`  // Space used in bytes
-	InodesUsed int64  `json:"inodes_used,omitempty"` // Number of inodes used
+	Timestamp  int64  // Timestamp of the filesystem stat
+	Mountpoint string // Filesystem mount path
+	UsedBytes  int64  // Space used in bytes
+	InodesUsed int64  // Number of inodes used
 }
 
 // SafeFileSystemMetrics safely extracts file system metrics from a ContainerStats object.
