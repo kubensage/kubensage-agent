@@ -1,19 +1,19 @@
 OUTPUT_DIR = .go-builds
 VERSION ?= 1.2.0
 
-.PHONY: clean build-all \
+.PHONY: clean build_proto build-all \
 	build-linux-amd64 build-linux-arm64 \
 	build-darwin-amd64 build-darwin-arm64 \
-	build-windows-amd64 tag
+	build-windows-amd64
 
 # GO
 clean:
 	rm -rf $(OUTPUT_DIR) || true
 
-proto_clean:
-	rm -rf ./proto/gen || true
+#proto_clean:
+#	rm -rf ./proto/gen || true
 
-build_proto: proto_clean
+build_proto: #proto_clean
 	@command -v protoc >/dev/null 2>&1 || { echo >&2 "protoc not installed. Aborting."; exit 1; }
 	protoc --go_out=. --go-grpc_out=. ./proto/*
 
