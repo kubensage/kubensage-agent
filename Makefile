@@ -15,7 +15,7 @@ clean:
 
 build_proto: #proto_clean
 	@command -v protoc >/dev/null 2>&1 || { echo >&2 "protoc not installed. Aborting."; exit 1; }
-	protoc --go_out=. --go-grpc_out=. ./proto/*
+	protoc --go_out=. --go-grpc_out=. ./proto/*.proto
 
 build-all: clean build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
 

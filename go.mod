@@ -3,7 +3,6 @@ module github.com/kubensage/kubensage-agent
 go 1.24.4
 
 require (
-	github.com/jinzhu/copier v0.4.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
