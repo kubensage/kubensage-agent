@@ -69,7 +69,6 @@ func setupLogger(flags config) *zap.Logger {
 func parseFlags() config {
 	relayAddress := flag.String("relay-address", "", "The address of the relay grpc server, (Required: yes, Default: N/A)")
 	mainLoopDurationSecondsFlag := flag.Int("main-loop-duration-seconds", 5, "The duration of the main loop (Required: No, Default: 5s)")
-	mainLoopDuration := time.Duration(*mainLoopDurationSecondsFlag) * time.Second
 
 	logLevel := flag.String("log-level", "info", "Set log level, (Required: No, Default: info)")
 	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log", "Path to log file, (Required: No, Default: /var/log/kubensage-agent.log)")
@@ -79,6 +78,8 @@ func parseFlags() config {
 	logCompress := flag.Bool("log-compress", true, "Compress old log files, (Required: No, Default: true)")
 
 	flag.Parse()
+
+	mainLoopDuration := time.Duration(*mainLoopDurationSecondsFlag) * time.Second
 
 	if *relayAddress == "" {
 		log.Fatal("Missing required flag: --relay-address")
