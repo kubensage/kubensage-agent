@@ -5,10 +5,12 @@ import (
 	"flag"
 	"github.com/kubensage/kubensage-agent/pkg/converter"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -33,6 +35,8 @@ func main() {
 	flags := parseFlags()
 	logger := setupLogger(flags)
 
+	logger.Info("kubensage-agent started", zap.String("version", runtime.Version()), zap.Time("start_time", time.Now()))
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -45,13 +49,26 @@ func main() {
 	}
 	logger.Info("Discovered CRI socket", zap.String("socket", criSocket))
 
-	runtimeClient := setupCRIConnection(criSocket, logger)
-	relayClient := setupRelayConnection(flags.relayAddress, logger)
+	runtimeClient, criConn := setupCRIConnection(criSocket, logger)
+	defer func(criConn *grpc.ClientConn) {
+		err := criConn.Close()
+		if err != nil {
+			logger.Warn("Failed to close CRI connection", zap.Error(err))
+		}
+	}(criConn)
+
+	relayClient, relayConn := setupRelayConnection(flags.relayAddress, logger)
+	defer func(relayConn *grpc.ClientConn) {
+		err := relayConn.Close()
+		if err != nil {
+			logger.Warn("Failed to close relay connection", zap.Error(err))
+		}
+	}(relayConn)
 
 	logger.Info("Opening initial stream channel")
 	stream := openStreamWithRetry(ctx, relayClient, logger)
 
-	startMetricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, flags.mainLoopDurationSeconds)
+	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, flags.mainLoopDurationSeconds)
 }
 
 func setupLogger(flags config) *zap.Logger {
@@ -97,21 +114,30 @@ func parseFlags() config {
 	}
 }
 
-func setupCRIConnection(socket string, logger *zap.Logger) runtimeapi.RuntimeServiceClient {
+func setupCRIConnection(socket string, logger *zap.Logger) (client runtimeapi.RuntimeServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to CRI socket", zap.String("socket", socket))
-	conn := utils.AcquireGrpcConnection(socket, *logger)
+	conn := utils.AcquireGrpcConnection(socket, logger)
 	logger.Info("Connected to CRI socket")
-	return runtimeapi.NewRuntimeServiceClient(conn)
+	return runtimeapi.NewRuntimeServiceClient(conn), conn
 }
 
-func setupRelayConnection(addr string, logger *zap.Logger) pb.MetricsServiceClient {
+func setupRelayConnection(addr string, logger *zap.Logger) (client pb.MetricsServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to relay GRPC server", zap.String("socket", addr))
-	conn := utils.AcquireGrpcConnection(addr, *logger)
+	conn := utils.AcquireGrpcConnection(addr, logger)
 	logger.Info("Connected to relay GRPC server")
-	return pb.NewMetricsServiceClient(conn)
+	return pb.NewMetricsServiceClient(conn), conn
 }
 
+// openStreamWithRetry attempts to establish a streaming connection with the relay server using a retry loop.
+// It implements an exponential backoff strategy:
+// - Starts with a 1-second wait between retries.
+// - On each failure, the wait time doubles (1s → 2s → 4s → 8s, etc.).
+// - The backoff duration is capped at 30 seconds to prevent excessively long delays.
+// - If the context is cancelled (e.g., due to shut down), the function logs and returns nil.
+// This mechanism helps reduce pressure on the relay server during outages or instability.
 func openStreamWithRetry(ctx context.Context, client pb.MetricsServiceClient, logger *zap.Logger) pb.MetricsService_SendMetricsClient {
+	backoff := time.Second
+
 	for {
 		logger.Info("Opening stream to relay server...")
 		stream, err := client.SendMetrics(ctx)
@@ -120,7 +146,17 @@ func openStreamWithRetry(ctx context.Context, client pb.MetricsServiceClient, lo
 			return stream
 		}
 		logger.Error("Failed to open stream, retrying...", zap.Error(err))
-		time.Sleep(2 * time.Second)
+
+		select {
+		case <-ctx.Done():
+			logger.Warn("Context cancelled during stream reconnect")
+			return nil
+		case <-time.After(backoff):
+		}
+
+		if backoff < 30*time.Second {
+			backoff *= 2
+		}
 	}
 }
 
@@ -130,7 +166,7 @@ func handleSignal() <-chan os.Signal {
 	return sigCh
 }
 
-func startMetricsLoop(
+func metricsLoop(
 	ctx context.Context,
 	logger *zap.Logger,
 	runtimeClient runtimeapi.RuntimeServiceClient,
@@ -155,11 +191,17 @@ func startMetricsLoop(
 			return
 
 		case <-ctx.Done():
+			ack, err := stream.CloseAndRecv()
+			if err != nil {
+				logger.Error("Failed to receive ack on context cancel", zap.Error(err))
+			} else {
+				logger.Info("Relay server acknowledged on cancel", zap.String("relay_response", ack.Message))
+			}
 			logger.Info("Context cancelled, exiting")
 			return
 
 		case <-ticker.C:
-			metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, *logger)
+			metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, logger)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {
@@ -178,11 +220,14 @@ func startMetricsLoop(
 			if err := stream.Send(converted); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
 
+				_ = stream.CloseSend()
+
 				stream = openStreamWithRetry(ctx, relayClient, logger)
 				logger.Info("Reconnected to stream successfully")
 
-				if err := stream.Send(converted); err != nil {
-					logger.Error("Send after reconnect failed", zap.Error(err))
+				err2 := stream.Send(converted)
+				if err2 != nil {
+					logger.Error("Send after reconnect failed", zap.Error(err2))
 					continue
 				}
 
@@ -190,7 +235,6 @@ func startMetricsLoop(
 			} else {
 				logger.Info("Metrics sent successfully", zap.Int("n_of_discovered_pods", len(converted.PodMetrics)))
 			}
-
 		}
 	}
 }
