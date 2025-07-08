@@ -35,10 +35,12 @@ func main() {
 	flags := parseFlags()
 	logger := setupLogger(flags)
 
-	logger.Info("kubensage-agent started", zap.String("version", runtime.Version()), zap.Time("start_time", time.Now()))
+	// Log basic runtime info on agent startup
+	logger.Info("kubensage-agent started", zap.String("version", runtime.Version()),
+		zap.Time("start_time", time.Now()))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	defer cancel() // Ensures all context-aware operations can exit cleanly
 
 	sigCh := handleSignal()
 
@@ -49,6 +51,7 @@ func main() {
 	}
 	logger.Info("Discovered CRI socket", zap.String("socket", criSocket))
 
+	// Connect to CRI and defer cleanup of connection
 	runtimeClient, criConn := setupCRIConnection(criSocket, logger)
 	defer func(criConn *grpc.ClientConn) {
 		err := criConn.Close()
@@ -57,6 +60,7 @@ func main() {
 		}
 	}(criConn)
 
+	// Connect to relay and defer cleanup of connection
 	relayClient, relayConn := setupRelayConnection(flags.relayAddress, logger)
 	defer func(relayConn *grpc.ClientConn) {
 		err := relayConn.Close()
@@ -68,6 +72,7 @@ func main() {
 	logger.Info("Opening initial stream channel")
 	stream := openStreamWithRetry(ctx, relayClient, logger)
 
+	// Start the core metric collection loop
 	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, flags.mainLoopDurationSeconds)
 }
 
@@ -84,15 +89,29 @@ func setupLogger(flags config) *zap.Logger {
 }
 
 func parseFlags() config {
-	relayAddress := flag.String("relay-address", "", "The address of the relay grpc server, (Required: yes, Default: N/A)")
-	mainLoopDurationSecondsFlag := flag.Int("main-loop-duration-seconds", 5, "The duration of the main loop (Required: No, Default: 5s)")
+	relayAddress := flag.String("relay-address", "",
+		"The address of the relay grpc server, (Required: yes, Default: N/A)")
 
-	logLevel := flag.String("log-level", "info", "Set log level, (Required: No, Default: info)")
-	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log", "Path to log file, (Required: No, Default: /var/log/kubensage-agent.log)")
-	logMaxSize := flag.Int("log-max-size", 10, "Maximum log size (MB), (Required: No, Default: 10)")
-	logMaxBackups := flag.Int("log-max-backups", 5, "Max backup files, (Required: No, Default: 5)")
-	logMaxAge := flag.Int("log-max-age", 30, "Max age in days to retain old log files, (Required: No, Default: 30)")
-	logCompress := flag.Bool("log-compress", true, "Compress old log files, (Required: No, Default: true)")
+	mainLoopDurationSecondsFlag := flag.Int("main-loop-duration-seconds", 5,
+		"The duration of the main loop (Required: No, Default: 5s)")
+
+	logLevel := flag.String("log-level", "info",
+		"Set log level, (Required: No, Default: info)")
+
+	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log",
+		"Path to log file, (Required: No, Default: /var/log/kubensage-agent.log)")
+
+	logMaxSize := flag.Int("log-max-size", 10,
+		"Maximum log size (MB), (Required: No, Default: 10)")
+
+	logMaxBackups := flag.Int("log-max-backups", 5,
+		"Max backup files, (Required: No, Default: 5)")
+
+	logMaxAge := flag.Int("log-max-age", 30,
+		"Max age in days to retain old log files, (Required: No, Default: 30)")
+
+	logCompress := flag.Bool("log-compress", true,
+		"Compress old log files, (Required: No, Default: true)")
 
 	flag.Parse()
 
@@ -114,14 +133,20 @@ func parseFlags() config {
 	}
 }
 
-func setupCRIConnection(socket string, logger *zap.Logger) (client runtimeapi.RuntimeServiceClient, connection *grpc.ClientConn) {
+func setupCRIConnection(
+	socket string,
+	logger *zap.Logger,
+) (client runtimeapi.RuntimeServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to CRI socket", zap.String("socket", socket))
 	conn := utils.AcquireGrpcConnection(socket, logger)
 	logger.Info("Connected to CRI socket")
 	return runtimeapi.NewRuntimeServiceClient(conn), conn
 }
 
-func setupRelayConnection(addr string, logger *zap.Logger) (client pb.MetricsServiceClient, connection *grpc.ClientConn) {
+func setupRelayConnection(
+	addr string,
+	logger *zap.Logger,
+) (client pb.MetricsServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to relay GRPC server", zap.String("socket", addr))
 	conn := utils.AcquireGrpcConnection(addr, logger)
 	logger.Info("Connected to relay GRPC server")
@@ -135,7 +160,12 @@ func setupRelayConnection(addr string, logger *zap.Logger) (client pb.MetricsSer
 // - The backoff duration is capped at 30 seconds to prevent excessively long delays.
 // - If the context is cancelled (e.g., due to shut down), the function logs and returns nil.
 // This mechanism helps reduce pressure on the relay server during outages or instability.
-func openStreamWithRetry(ctx context.Context, client pb.MetricsServiceClient, logger *zap.Logger) pb.MetricsService_SendMetricsClient {
+func openStreamWithRetry(
+	ctx context.Context,
+	client pb.MetricsServiceClient,
+	logger *zap.Logger,
+) pb.MetricsService_SendMetricsClient {
+
 	backoff := time.Second
 
 	for {
@@ -149,9 +179,11 @@ func openStreamWithRetry(ctx context.Context, client pb.MetricsServiceClient, lo
 
 		select {
 		case <-ctx.Done():
+			// If the context is cancelled externally (e.g. SIGTERM or shutdown), stop retrying
 			logger.Warn("Context cancelled during stream reconnect")
 			return nil
 		case <-time.After(backoff):
+			// Wait for the current backoff duration before retrying
 		}
 
 		if backoff < 30*time.Second {
@@ -166,6 +198,13 @@ func handleSignal() <-chan os.Signal {
 	return sigCh
 }
 
+// metricsLoop runs the main operational loop of the agent.
+// At each interval:
+// - It collects CRI-based metrics concurrently
+// - Converts them into protobuf format
+// - Sends them via GRPC to the relay server
+// It also handles reconnection on stream failure and responds to shut down signals.
+
 func metricsLoop(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -176,11 +215,12 @@ func metricsLoop(
 	mainLoopDurationSeconds time.Duration,
 ) {
 	ticker := time.NewTicker(mainLoopDurationSeconds)
-	defer ticker.Stop()
+	defer ticker.Stop() // Ensure ticker doesn't leak if function exits
 
 	for {
 		select {
 		case <-sigCh:
+			// Signal received: close the stream and exit
 			ack, err := stream.CloseAndRecv()
 			if err != nil {
 				logger.Error("Failed to receive ack", zap.Error(err))
@@ -191,6 +231,7 @@ func metricsLoop(
 			return
 
 		case <-ctx.Done():
+			// Context cancelled externally: close the stream and exit
 			ack, err := stream.CloseAndRecv()
 			if err != nil {
 				logger.Error("Failed to receive ack on context cancel", zap.Error(err))
@@ -201,6 +242,8 @@ func metricsLoop(
 			return
 
 		case <-ticker.C:
+			// Triggered by ticker: collect and send metrics
+
 			metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, logger)
 			if errs != nil {
 				var errStrs []string
@@ -217,10 +260,11 @@ func metricsLoop(
 				continue
 			}
 
+			// Attempt to send metrics; on failure, reconnect and retry once
 			if err := stream.Send(converted); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
 
-				_ = stream.CloseSend()
+				_ = stream.CloseSend() // Ensure we explicitly close the failed stream
 
 				stream = openStreamWithRetry(ctx, relayClient, logger)
 				logger.Info("Reconnected to stream successfully")
