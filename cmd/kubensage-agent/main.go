@@ -158,9 +158,10 @@ func main() {
 
 			if err := stream.Send(converted); err != nil {
 				logger.Error("Failed to send metrics", zap.Error(err))
+				continue
+			} else {
+				logger.Info("Metrics sent to relay successfully", zap.Any("n_of_discovered_pods", len(converted.PodMetrics)))
 			}
-
-			logger.Info("Metrics sent to relay successfully", zap.Any("n_of_discovered_pods", len(converted.PodMetrics)))
 		}
 	}
 }
