@@ -109,7 +109,6 @@ func main() {
 
 	relayClient := pb.NewMetricsServiceClient(grpcRelayConnection)
 
-	logger.Info("Opening stream channel")
 	var stream pb.MetricsService_SendMetricsClient
 	var streamErr error
 	connectStream := func() pb.MetricsService_SendMetricsClient {
