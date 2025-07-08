@@ -139,5 +139,5 @@ message Ack {
 }
 
 service MetricsService {
-  rpc SendMetrics(Metrics) returns (Ack);
+  rpc SendMetrics(stream Metrics) returns (Ack);
 }

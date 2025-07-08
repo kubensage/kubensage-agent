@@ -109,43 +109,58 @@ func main() {
 
 	relayClient := pb.NewMetricsServiceClient(grpcRelayConnection)
 
+	logger.Info("Opening stream channel")
+	stream, err := relayClient.SendMetrics(ctx)
+	if err != nil {
+		logger.Fatal("Failed to open stream", zap.Error(err))
+	}
+	logger.Info("Opened stream channel")
+
 	// Main loop: respond to signals or perform periodic collection
 	logger.Info("Starting collection loop", zap.Int("interval_seconds", int(TickerDuration.Seconds())))
 	for {
 		select {
 		case <-sigCh:
+			ack, err := stream.CloseAndRecv()
+			if err != nil {
+				logger.Error("Failed to receive ack", zap.Error(err))
+			}
+
+			logger.Info("Relay server acknowledged", zap.String("relay_response", ack.Message))
 			logger.Warn("Stopping Kubensage Agent, termination signal received")
+			cancel()
+			return
+
+		case <-ctx.Done():
+			logger.Info("Kubensage Agent exiting")
 			return
 
 		// On each tick, collect metrics asynchronously
 		case <-ticker.C:
-			go func() {
-				metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, *logger)
+			metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, *logger)
 
-				if errs != nil {
-					var errStrs []string
-					for _, e := range errs {
-						errStrs = append(errStrs, e.Error())
-					}
-					logger.Error("Failed to get metrics", zap.Strings("errors", errStrs))
-					return
+			if errs != nil {
+				var errStrs []string
+				for _, e := range errs {
+					errStrs = append(errStrs, e.Error())
 				}
+				logger.Error("Failed to get metrics", zap.Strings("errors", errStrs))
+				continue
+			}
 
-				logger.Debug("Got metrics", zap.Any("metrics", metrics))
+			logger.Debug("Got metrics", zap.Any("metrics", metrics))
 
-				converted, err := converter.ConvertToProto(metrics)
-				if err != nil {
-					logger.Error("Failed to convert metrics", zap.Error(err))
-					return
-				}
+			converted, err := converter.ConvertToProto(metrics)
+			if err != nil {
+				logger.Error("Failed to convert metrics", zap.Error(err))
+				continue
+			}
 
-				ack, err := relayClient.SendMetrics(ctx, converted)
-				if err != nil {
-					logger.Error("Error sending metrics to relay server", zap.Error(err))
-					return
-				}
-				logger.Info("Relay server acknowledged", zap.String("relay_response", ack.Message))
-			}()
+			if err := stream.Send(converted); err != nil {
+				logger.Error("Failed to send metrics", zap.Error(err))
+			}
+
+			logger.Info("Metrics sent to relay successfully", zap.Any("n_of_discovered_pods", len(converted.PodMetrics)))
 		}
 	}
 }
