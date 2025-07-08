@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  tag-build-release:
-    name: Tag, Build and Release
+  build-tag-release:
+    name: Build, Tag and Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,21 +19,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
-      - name: Bump version and create tag
-        id: tag
-        uses: anothrNick/github-tag-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO_OWNER: kubensage
-          INITIAL_VERSION: 0.0.0
-
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          TAG=$(git describe --tags --abbrev=0)
-          echo "Latest tag: $TAG"
-          echo "VERSION=$TAG" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -53,6 +38,21 @@ jobs:
 
       - name: Build binaries
         run: make build-all VERSION=${{ env.VERSION }} OUTPUT_DIR=build
+
+      - name: Bump version and create tag
+        id: tag
+        uses: anothrNick/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: kubensage
+          INITIAL_VERSION: 0.0.0
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "Latest tag: $TAG"
+          echo "VERSION=$TAG" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

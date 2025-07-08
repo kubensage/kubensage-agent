@@ -1182,9 +1182,9 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\vpod_metrics\x18\x02 \x03(\v2\x13.metrics.PodMetricsR\n" +
 	"podMetrics\"\x1f\n" +
 	"\x03Ack\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2?\n" +
-	"\x0eMetricsService\x12-\n" +
-	"\vSendMetrics\x12\x10.metrics.Metrics\x1a\f.metrics.AckB\fZ\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2A\n" +
+	"\x0eMetricsService\x12/\n" +
+	"\vSendMetrics\x12\x10.metrics.Metrics\x1a\f.metrics.Ack(\x01B\fZ\n" +
 	"/proto/genb\x06proto3"
 
 var (

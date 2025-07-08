@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsServiceClient interface {
-	SendMetrics(ctx context.Context, in *Metrics, opts ...grpc.CallOption) (*Ack, error)
+	SendMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[Metrics, Ack], error)
 }
 
 type metricsServiceClient struct {
@@ -37,21 +37,24 @@ func NewMetricsServiceClient(cc grpc.ClientConnInterface) MetricsServiceClient {
 	return &metricsServiceClient{cc}
 }
 
-func (c *metricsServiceClient) SendMetrics(ctx context.Context, in *Metrics, opts ...grpc.CallOption) (*Ack, error) {
+func (c *metricsServiceClient) SendMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[Metrics, Ack], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Ack)
-	err := c.cc.Invoke(ctx, MetricsService_SendMetrics_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &MetricsService_ServiceDesc.Streams[0], MetricsService_SendMetrics_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[Metrics, Ack]{ClientStream: stream}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MetricsService_SendMetricsClient = grpc.ClientStreamingClient[Metrics, Ack]
 
 // MetricsServiceServer is the server API for MetricsService service.
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility.
 type MetricsServiceServer interface {
-	SendMetrics(context.Context, *Metrics) (*Ack, error)
+	SendMetrics(grpc.ClientStreamingServer[Metrics, Ack]) error
 	mustEmbedUnimplementedMetricsServiceServer()
 }
 
@@ -62,8 +65,8 @@ type MetricsServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMetricsServiceServer struct{}
 
-func (UnimplementedMetricsServiceServer) SendMetrics(context.Context, *Metrics) (*Ack, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendMetrics not implemented")
+func (UnimplementedMetricsServiceServer) SendMetrics(grpc.ClientStreamingServer[Metrics, Ack]) error {
+	return status.Errorf(codes.Unimplemented, "method SendMetrics not implemented")
 }
 func (UnimplementedMetricsServiceServer) mustEmbedUnimplementedMetricsServiceServer() {}
 func (UnimplementedMetricsServiceServer) testEmbeddedByValue()                        {}
@@ -86,23 +89,12 @@ func RegisterMetricsServiceServer(s grpc.ServiceRegistrar, srv MetricsServiceSer
 	s.RegisterService(&MetricsService_ServiceDesc, srv)
 }
 
-func _MetricsService_SendMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Metrics)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetricsServiceServer).SendMetrics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MetricsService_SendMetrics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsServiceServer).SendMetrics(ctx, req.(*Metrics))
-	}
-	return interceptor(ctx, in, info, handler)
+func _MetricsService_SendMetrics_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MetricsServiceServer).SendMetrics(&grpc.GenericServerStream[Metrics, Ack]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MetricsService_SendMetricsServer = grpc.ClientStreamingServer[Metrics, Ack]
 
 // MetricsService_ServiceDesc is the grpc.ServiceDesc for MetricsService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -110,12 +102,13 @@ func _MetricsService_SendMetrics_Handler(srv interface{}, ctx context.Context, d
 var MetricsService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "metrics.MetricsService",
 	HandlerType: (*MetricsServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "SendMetrics",
-			Handler:    _MetricsService_SendMetrics_Handler,
+			StreamName:    "SendMetrics",
+			Handler:       _MetricsService_SendMetrics_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/metrics.proto",
 }

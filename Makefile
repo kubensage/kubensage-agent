@@ -1,5 +1,5 @@
 OUTPUT_DIR = .go-builds
-VERSION ?= 1.2.0
+VERSION ?= local
 
 .PHONY: clean build-proto build-all \
 	build-linux-amd64 build-linux-arm64 \
@@ -35,3 +35,6 @@ build-darwin-arm64: build-proto
 build-windows-amd64: build-proto
 	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-windows-amd64.exe cmd/kubensage-agent/main.go
+
+fresh-scp: build-linux-amd64
+	scp .go-builds/kubensage-agent-local-linux-amd64 roman@192.168.1.160:/home/roman/kubensage/agent
