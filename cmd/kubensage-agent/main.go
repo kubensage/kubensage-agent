@@ -5,7 +5,6 @@ import (
 	"flag"
 	"github.com/kubensage/kubensage-agent/pkg/converter"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"log"
 	"os"
@@ -18,140 +17,148 @@ import (
 	pb "github.com/kubensage/kubensage-agent/proto/gen"
 )
 
-// TickerDuration defines how often metrics are collected from the CRI runtime.
-var TickerDuration = time.Second * 5
-var RelayGrpcServerAddress = "localhost:50051"
+type config struct {
+	relayAddress            string
+	mainLoopDurationSeconds time.Duration
 
-// main is the entry point for the kubensage-agent binary.
-//
-// This agent runs as a background process on Kubernetes nodes.
-// It periodically collects system and container-level metrics by querying the CRI runtime via gRPC.
-// Collected metrics are logged and can be forwarded by a relay to monitoring systems like Prometheus.
+	logLevel      string
+	logFile       string
+	logMaxSize    int
+	logMaxBackups int
+	logMaxAge     int
+	logCompress   bool
+}
+
 func main() {
-	// === Logging flags ===
-	logLevel := flag.String("log-level", "info", "Set log level: debug, info, warn, error")
-	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log", "Path to log file")
-	logMaxSize := flag.Int("log-max-size", 10, "Maximum size in MB before rotation")
-	logMaxBackups := flag.Int("log-max-backups", 5, "Maximum number of old log files to retain")
-	logMaxAge := flag.Int("log-max-age", 30, "Maximum number of days to retain old log files")
-	logCompress := flag.Bool("log-compress", true, "Whether to compress rotated log files")
-
-	relayAddress := flag.String("relay-address", "", "The address of the relay grpc server")
-	flag.Parse()
-
-	// Setup logging
-	logger, err := utils.NewLogger(logLevel, logFile, logMaxSize, logMaxBackups, logMaxAge, logCompress)
-	if err != nil {
-		log.Fatalf("Failed to create logger: %v", err)
-	}
-	defer func(logger *zap.Logger) {
-		err := logger.Sync()
-		if err != nil {
-			log.Fatalf("Failed to sync logger: %v", err)
-		}
-	}(logger)
-
-	logger.Info("Starting Kubensage Agent", zap.String("log_level", logger.Level().String()))
-	logger.Info("Log configuration",
-		zap.String("file", *logFile),
-		zap.Int("max_size_mb", *logMaxSize),
-		zap.Int("max_backups", *logMaxBackups),
-		zap.Int("max_age_days", *logMaxAge),
-		zap.Bool("compress", *logCompress),
-	)
-
-	if *relayAddress == "" {
-		logger.Fatal("Missing required flag: --relay-address")
-	}
-
-	// Setup signal handler for graceful shutdown (SIGINT or SIGTERM)
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
-	// Start periodic ticker for metric collection
-	ticker := time.NewTicker(TickerDuration)
-	defer ticker.Stop()
+	flags := parseFlags()
+	logger := setupLogger(flags)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Automatically detect CRI socket (e.g., containerd or crio)
+	sigCh := handleSignal()
+
 	logger.Info("Discovering CRI socket")
-	socket, err := discovery.CriSocketDiscovery()
+	criSocket, err := discovery.CriSocketDiscovery()
 	if err != nil {
 		logger.Fatal("Failed to discover CRI socket", zap.Error(err))
 	}
-	logger.Info("Discovered CRI socket", zap.String("socket", socket))
+	logger.Info("Discovered CRI socket", zap.String("socket", criSocket))
 
-	// Establish gRPC connection to CRI runtime
-	logger.Info("Establishing connection to CRI socket", zap.String("socket", socket))
-	grpcCriSocketConnection := utils.AcquireGrpcConnection(socket, *logger)
-	defer func(grpcConnection *grpc.ClientConn) {
-		err := grpcConnection.Close()
-		if err != nil {
-			logger.Fatal("Failed to close gRPC connection for CRI socket", zap.Error(err))
-		}
-	}(grpcCriSocketConnection)
-	logger.Info("Connected to CRI socket", zap.String("socket", socket))
+	runtimeClient := setupCRIConnection(criSocket, logger)
+	relayClient := setupRelayConnection(flags.relayAddress, logger)
 
-	// Initialize CRI runtime client
-	runtimeClient := runtimeapi.NewRuntimeServiceClient(grpcCriSocketConnection)
+	logger.Info("Opening initial stream channel")
+	stream := openStreamWithRetry(ctx, relayClient, logger)
 
-	logger.Info("Establishing connection to relay GRPC server", zap.String("socket", RelayGrpcServerAddress))
-	grpcRelayConnection := utils.AcquireGrpcConnection(RelayGrpcServerAddress, *logger)
-	defer func(grpcConnection *grpc.ClientConn) {
-		err := grpcConnection.Close()
-		if err != nil {
-			logger.Fatal("Failed to close gRPC connection for relay", zap.Error(err))
-		}
-	}(grpcRelayConnection)
-	logger.Info("Connected to relay GRPC server", zap.String("socket", RelayGrpcServerAddress))
+	startMetricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, flags.mainLoopDurationSeconds)
+}
 
-	relayClient := pb.NewMetricsServiceClient(grpcRelayConnection)
+func setupLogger(flags config) *zap.Logger {
+	logger, err := utils.NewLogger(&flags.logLevel, &flags.logFile, &flags.logMaxSize, &flags.logMaxBackups,
+		&flags.logMaxAge, &flags.logCompress,
+	)
 
-	var stream pb.MetricsService_SendMetricsClient
-	var streamErr error
-	connectStream := func() pb.MetricsService_SendMetricsClient {
-		for {
-			logger.Info("Opening stream to relay server...")
-			stream, streamErr = relayClient.SendMetrics(ctx)
-			if streamErr == nil {
-				logger.Info("Stream to relay server opened")
-				return stream
-			}
-			logger.Error("Failed to open stream, retrying...", zap.Error(streamErr))
-			time.Sleep(2 * time.Second)
-		}
-	}
-	stream = connectStream()
 	if err != nil {
-		logger.Fatal("Failed to open stream", zap.Error(err))
+		log.Fatalf("Failed to create logger: %v", err)
 	}
-	logger.Info("Opened stream channel")
 
-	// Main loop: respond to signals or perform periodic collection
-	logger.Info("Starting collection loop", zap.Int("interval_seconds", int(TickerDuration.Seconds())))
+	return logger
+}
+
+func parseFlags() config {
+	relayAddress := flag.String("relay-address", "", "The address of the relay grpc server, (Required: yes, Default: N/A)")
+	mainLoopDurationSecondsFlag := flag.Int("main-loop-duration-seconds", 5, "The duration of the main loop (Required: No, Default: 5s)")
+	mainLoopDuration := time.Duration(*mainLoopDurationSecondsFlag) * time.Second
+
+	logLevel := flag.String("log-level", "info", "Set log level, (Required: No, Default: info)")
+	logFile := flag.String("log-file", "/var/log/kubensage/kubensage-agent.log", "Path to log file, (Required: No, Default: /var/log/kubensage-agent.log)")
+	logMaxSize := flag.Int("log-max-size", 10, "Maximum log size (MB), (Required: No, Default: 10)")
+	logMaxBackups := flag.Int("log-max-backups", 5, "Max backup files, (Required: No, Default: 5)")
+	logMaxAge := flag.Int("log-max-age", 30, "Max age in days to retain old log files, (Required: No, Default: 30)")
+	logCompress := flag.Bool("log-compress", true, "Compress old log files, (Required: No, Default: true)")
+
+	flag.Parse()
+
+	if *relayAddress == "" {
+		log.Fatal("Missing required flag: --relay-address")
+	}
+
+	return config{
+		relayAddress:            *relayAddress,
+		mainLoopDurationSeconds: mainLoopDuration,
+		logLevel:                *logLevel,
+		logFile:                 *logFile,
+		logMaxSize:              *logMaxSize,
+		logMaxBackups:           *logMaxBackups,
+		logMaxAge:               *logMaxAge,
+		logCompress:             *logCompress,
+	}
+}
+
+func setupCRIConnection(socket string, logger *zap.Logger) runtimeapi.RuntimeServiceClient {
+	logger.Info("Connecting to CRI socket", zap.String("socket", socket))
+	conn := utils.AcquireGrpcConnection(socket, *logger)
+	logger.Info("Connected to CRI socket")
+	return runtimeapi.NewRuntimeServiceClient(conn)
+}
+
+func setupRelayConnection(addr string, logger *zap.Logger) pb.MetricsServiceClient {
+	logger.Info("Connecting to relay GRPC server", zap.String("socket", addr))
+	conn := utils.AcquireGrpcConnection(addr, *logger)
+	logger.Info("Connected to relay GRPC server")
+	return pb.NewMetricsServiceClient(conn)
+}
+
+func openStreamWithRetry(ctx context.Context, client pb.MetricsServiceClient, logger *zap.Logger) pb.MetricsService_SendMetricsClient {
+	for {
+		logger.Info("Opening stream to relay server...")
+		stream, err := client.SendMetrics(ctx)
+		if err == nil {
+			logger.Info("Stream opened successfully")
+			return stream
+		}
+		logger.Error("Failed to open stream, retrying...", zap.Error(err))
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func handleSignal() <-chan os.Signal {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	return sigCh
+}
+
+func startMetricsLoop(
+	ctx context.Context,
+	logger *zap.Logger,
+	runtimeClient runtimeapi.RuntimeServiceClient,
+	relayClient pb.MetricsServiceClient,
+	stream pb.MetricsService_SendMetricsClient,
+	sigCh <-chan os.Signal,
+	mainLoopDurationSeconds time.Duration,
+) {
+	ticker := time.NewTicker(mainLoopDurationSeconds)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-sigCh:
 			ack, err := stream.CloseAndRecv()
 			if err != nil {
 				logger.Error("Failed to receive ack", zap.Error(err))
+			} else {
+				logger.Info("Relay server acknowledged", zap.String("relay_response", ack.Message))
 			}
-
-			logger.Info("Relay server acknowledged", zap.String("relay_response", ack.Message))
-			logger.Warn("Stopping Kubensage Agent, termination signal received")
-			cancel()
+			logger.Warn("Termination signal received, exiting")
 			return
 
 		case <-ctx.Done():
-			logger.Info("Kubensage Agent exiting")
+			logger.Info("Context cancelled, exiting")
 			return
 
-		// On each tick, collect metrics asynchronously
 		case <-ticker.C:
 			metrics, errs := discovery.GetAllMetrics(ctx, runtimeClient, *logger)
-
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {
@@ -161,8 +168,6 @@ func main() {
 				continue
 			}
 
-			logger.Debug("Got metrics", zap.Any("metrics", metrics))
-
 			converted, err := converter.ConvertToProto(metrics)
 			if err != nil {
 				logger.Error("Failed to convert metrics", zap.Error(err))
@@ -170,14 +175,21 @@ func main() {
 			}
 
 			if err := stream.Send(converted); err != nil {
-				logger.Warn("Stream send failed, trying to reconnect", zap.Error(err))
-				stream = connectStream()
+				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
+
+				stream = openStreamWithRetry(ctx, relayClient, logger)
+				logger.Info("Reconnected to stream successfully")
 
 				if err := stream.Send(converted); err != nil {
-					logger.Error("Retry send after reconnect failed", zap.Error(err))
+					logger.Error("Send after reconnect failed", zap.Error(err))
 					continue
 				}
+
+				logger.Info("Send after reconnect succeeded")
+			} else {
+				logger.Info("Metrics sent successfully", zap.Int("n_of_discovered_pods", len(converted.PodMetrics)))
 			}
+
 		}
 	}
 }
