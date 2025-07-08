@@ -110,7 +110,21 @@ func main() {
 	relayClient := pb.NewMetricsServiceClient(grpcRelayConnection)
 
 	logger.Info("Opening stream channel")
-	stream, err := relayClient.SendMetrics(ctx)
+	var stream pb.MetricsService_SendMetricsClient
+	var streamErr error
+	connectStream := func() pb.MetricsService_SendMetricsClient {
+		for {
+			logger.Info("Opening stream to relay server...")
+			stream, streamErr = relayClient.SendMetrics(ctx)
+			if streamErr == nil {
+				logger.Info("Stream to relay server opened")
+				return stream
+			}
+			logger.Error("Failed to open stream, retrying...", zap.Error(streamErr))
+			time.Sleep(2 * time.Second)
+		}
+	}
+	stream = connectStream()
 	if err != nil {
 		logger.Fatal("Failed to open stream", zap.Error(err))
 	}
@@ -157,10 +171,13 @@ func main() {
 			}
 
 			if err := stream.Send(converted); err != nil {
-				logger.Error("Failed to send metrics", zap.Error(err))
-				continue
-			} else {
-				logger.Info("Metrics sent to relay successfully", zap.Any("n_of_discovered_pods", len(converted.PodMetrics)))
+				logger.Warn("Stream send failed, trying to reconnect", zap.Error(err))
+				stream = connectStream()
+
+				if err := stream.Send(converted); err != nil {
+					logger.Error("Retry send after reconnect failed", zap.Error(err))
+					continue
+				}
 			}
 		}
 	}
