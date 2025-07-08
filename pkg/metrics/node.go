@@ -49,7 +49,7 @@ type NodeMetrics struct {
 // SafeNodeMetrics collects node-level system metrics using gopsutil and /proc/pressure.
 // It gathers host metadata, CPU/memory usage, PSI metrics, and network interface details.
 // Returns a NodeMetrics struct on success or an error if any critical system call fails.
-func SafeNodeMetrics(ctx context.Context, interval time.Duration, logger zap.Logger) (*NodeMetrics, error) {
+func SafeNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
