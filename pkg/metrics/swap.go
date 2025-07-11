@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -14,10 +15,20 @@ func SafeSwapMetrics(stats *runtimeapi.ContainerStats) *proto.SwapMetrics {
 		return &proto.SwapMetrics{}
 	}
 
+	var availableBytes, usageBytes *wrapperspb.UInt64Value
+
+	if stats.Swap.SwapAvailableBytes != nil {
+		availableBytes = utils.ConvertCRIUInt64(stats.Swap.SwapAvailableBytes)
+	}
+
+	if stats.Swap.SwapUsageBytes != nil {
+		usageBytes = utils.ConvertCRIUInt64(stats.Swap.SwapUsageBytes)
+	}
+
 	metrics := &proto.SwapMetrics{
 		Timestamp:      stats.Swap.Timestamp,
-		AvailableBytes: utils.SafeUint64ValueToInt64OrDefault(stats.Swap.SwapAvailableBytes, -1),
-		UsageBytes:     utils.SafeUint64ValueToInt64OrDefault(stats.Swap.SwapUsageBytes, -1),
+		AvailableBytes: availableBytes,
+		UsageBytes:     usageBytes,
 	}
 
 	return metrics

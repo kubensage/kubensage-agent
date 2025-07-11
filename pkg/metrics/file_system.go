@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -14,10 +15,20 @@ func SafeFileSystemMetrics(stats *runtimeapi.ContainerStats) *proto.FileSystemMe
 		return &proto.FileSystemMetrics{}
 	}
 
+	var usedBytes, inodesUsed *wrapperspb.UInt64Value
+
+	if stats.WritableLayer.UsedBytes != nil {
+		usedBytes = utils.ConvertCRIUInt64(stats.WritableLayer.UsedBytes)
+	}
+
+	if stats.WritableLayer.InodesUsed != nil {
+		inodesUsed = utils.ConvertCRIUInt64(stats.WritableLayer.InodesUsed)
+	}
+
 	metrics := &proto.FileSystemMetrics{
 		Timestamp:  stats.WritableLayer.Timestamp,
-		UsedBytes:  utils.SafeUint64ValueToInt64OrDefault(stats.WritableLayer.UsedBytes, -1),
-		InodesUsed: utils.SafeUint64ValueToInt64OrDefault(stats.WritableLayer.InodesUsed, -1),
+		UsedBytes:  usedBytes,
+		InodesUsed: inodesUsed,
 	}
 
 	if stats.WritableLayer.FsId != nil {

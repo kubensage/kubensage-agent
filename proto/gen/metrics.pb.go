@@ -9,6 +9,7 @@ package gen
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -23,11 +24,11 @@ const (
 
 // --- PSI Metrics ---
 type PsiData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Total         uint64                 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
-	Avg10         float64                `protobuf:"fixed64,2,opt,name=avg10,proto3" json:"avg10,omitempty"`
-	Avg60         float64                `protobuf:"fixed64,3,opt,name=avg60,proto3" json:"avg60,omitempty"`
-	Avg300        float64                `protobuf:"fixed64,4,opt,name=avg300,proto3" json:"avg300,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Total         *wrapperspb.UInt64Value `protobuf:"bytes,1,opt,name=total,proto3" json:"total,omitempty"`
+	Avg10         *wrapperspb.DoubleValue `protobuf:"bytes,2,opt,name=avg10,proto3" json:"avg10,omitempty"`
+	Avg60         *wrapperspb.DoubleValue `protobuf:"bytes,3,opt,name=avg60,proto3" json:"avg60,omitempty"`
+	Avg300        *wrapperspb.DoubleValue `protobuf:"bytes,4,opt,name=avg300,proto3" json:"avg300,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -62,32 +63,32 @@ func (*PsiData) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PsiData) GetTotal() uint64 {
+func (x *PsiData) GetTotal() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.Total
 	}
-	return 0
+	return nil
 }
 
-func (x *PsiData) GetAvg10() float64 {
+func (x *PsiData) GetAvg10() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.Avg10
 	}
-	return 0
+	return nil
 }
 
-func (x *PsiData) GetAvg60() float64 {
+func (x *PsiData) GetAvg60() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.Avg60
 	}
-	return 0
+	return nil
 }
 
-func (x *PsiData) GetAvg300() float64 {
+func (x *PsiData) GetAvg300() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.Avg300
 	}
-	return 0
+	return nil
 }
 
 type PsiMetrics struct {
@@ -442,10 +443,10 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 
 // --- Container Metrics ---
 type CpuMetrics struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp            int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	UsageNanoCores       int64                  `protobuf:"varint,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
-	UsageCoreNanoSeconds int64                  `protobuf:"varint,3,opt,name=usage_core_nano_seconds,json=usageCoreNanoSeconds,proto3" json:"usage_core_nano_seconds,omitempty"`
+	state                protoimpl.MessageState  `protogen:"open.v1"`
+	Timestamp            int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	UsageNanoCores       *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
+	UsageCoreNanoSeconds *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=usage_core_nano_seconds,json=usageCoreNanoSeconds,proto3" json:"usage_core_nano_seconds,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -487,29 +488,29 @@ func (x *CpuMetrics) GetTimestamp() int64 {
 	return 0
 }
 
-func (x *CpuMetrics) GetUsageNanoCores() int64 {
+func (x *CpuMetrics) GetUsageNanoCores() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.UsageNanoCores
 	}
-	return 0
+	return nil
 }
 
-func (x *CpuMetrics) GetUsageCoreNanoSeconds() int64 {
+func (x *CpuMetrics) GetUsageCoreNanoSeconds() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.UsageCoreNanoSeconds
 	}
-	return 0
+	return nil
 }
 
 type MemoryMetrics struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp       int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	WorkingSetBytes int64                  `protobuf:"varint,2,opt,name=working_set_bytes,json=workingSetBytes,proto3" json:"working_set_bytes,omitempty"`
-	AvailableBytes  int64                  `protobuf:"varint,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes      int64                  `protobuf:"varint,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
-	RssBytes        int64                  `protobuf:"varint,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
-	PageFaults      int64                  `protobuf:"varint,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
-	MajorPageFaults int64                  `protobuf:"varint,7,opt,name=major_page_faults,json=majorPageFaults,proto3" json:"major_page_faults,omitempty"`
+	state           protoimpl.MessageState  `protogen:"open.v1"`
+	Timestamp       int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	WorkingSetBytes *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=working_set_bytes,json=workingSetBytes,proto3" json:"working_set_bytes,omitempty"`
+	AvailableBytes  *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
+	UsageBytes      *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	RssBytes        *wrapperspb.UInt64Value `protobuf:"bytes,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
+	PageFaults      *wrapperspb.UInt64Value `protobuf:"bytes,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
+	MajorPageFaults *wrapperspb.UInt64Value `protobuf:"bytes,7,opt,name=major_page_faults,json=majorPageFaults,proto3" json:"major_page_faults,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -551,54 +552,54 @@ func (x *MemoryMetrics) GetTimestamp() int64 {
 	return 0
 }
 
-func (x *MemoryMetrics) GetWorkingSetBytes() int64 {
+func (x *MemoryMetrics) GetWorkingSetBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.WorkingSetBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *MemoryMetrics) GetAvailableBytes() int64 {
+func (x *MemoryMetrics) GetAvailableBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.AvailableBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *MemoryMetrics) GetUsageBytes() int64 {
+func (x *MemoryMetrics) GetUsageBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.UsageBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *MemoryMetrics) GetRssBytes() int64 {
+func (x *MemoryMetrics) GetRssBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.RssBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *MemoryMetrics) GetPageFaults() int64 {
+func (x *MemoryMetrics) GetPageFaults() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.PageFaults
 	}
-	return 0
+	return nil
 }
 
-func (x *MemoryMetrics) GetMajorPageFaults() int64 {
+func (x *MemoryMetrics) GetMajorPageFaults() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.MajorPageFaults
 	}
-	return 0
+	return nil
 }
 
 type FileSystemMetrics struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Mountpoint    string                 `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
-	UsedBytes     int64                  `protobuf:"varint,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
-	InodesUsed    int64                  `protobuf:"varint,4,opt,name=inodes_used,json=inodesUsed,proto3" json:"inodes_used,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Timestamp     int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Mountpoint    string                  `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
+	UsedBytes     *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
+	InodesUsed    *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=inodes_used,json=inodesUsed,proto3" json:"inodes_used,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -647,25 +648,25 @@ func (x *FileSystemMetrics) GetMountpoint() string {
 	return ""
 }
 
-func (x *FileSystemMetrics) GetUsedBytes() int64 {
+func (x *FileSystemMetrics) GetUsedBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.UsedBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *FileSystemMetrics) GetInodesUsed() int64 {
+func (x *FileSystemMetrics) GetInodesUsed() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.InodesUsed
 	}
-	return 0
+	return nil
 }
 
 type SwapMetrics struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp      int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	AvailableBytes int64                  `protobuf:"varint,2,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes     int64                  `protobuf:"varint,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	state          protoimpl.MessageState  `protogen:"open.v1"`
+	Timestamp      int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	AvailableBytes *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
+	UsageBytes     *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -707,18 +708,18 @@ func (x *SwapMetrics) GetTimestamp() int64 {
 	return 0
 }
 
-func (x *SwapMetrics) GetAvailableBytes() int64 {
+func (x *SwapMetrics) GetAvailableBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.AvailableBytes
 	}
-	return 0
+	return nil
 }
 
-func (x *SwapMetrics) GetUsageBytes() int64 {
+func (x *SwapMetrics) GetUsageBytes() *wrapperspb.UInt64Value {
 	if x != nil {
 		return x.UsageBytes
 	}
-	return 0
+	return nil
 }
 
 // --- Container (within Pod) ---
@@ -733,7 +734,7 @@ type ContainerMetrics struct {
 	CpuMetrics        *CpuMetrics            `protobuf:"bytes,7,opt,name=cpu_metrics,json=cpuMetrics,proto3" json:"cpu_metrics,omitempty"`
 	MemoryMetrics     *MemoryMetrics         `protobuf:"bytes,8,opt,name=memory_metrics,json=memoryMetrics,proto3" json:"memory_metrics,omitempty"`
 	FileSystemMetrics *FileSystemMetrics     `protobuf:"bytes,9,opt,name=file_system_metrics,json=fileSystemMetrics,proto3" json:"file_system_metrics,omitempty"`
-	SwapMetrics       *SwapMetrics           `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3" json:"swap_metrics,omitempty"`
+	SwapMetrics       *SwapMetrics           `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3,oneof" json:"swap_metrics,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1041,12 +1042,12 @@ var File_proto_metrics_proto protoreflect.FileDescriptor
 
 const file_proto_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\x13proto/metrics.proto\x12\ametrics\"c\n" +
-	"\aPsiData\x12\x14\n" +
-	"\x05total\x18\x01 \x01(\x04R\x05total\x12\x14\n" +
-	"\x05avg10\x18\x02 \x01(\x01R\x05avg10\x12\x14\n" +
-	"\x05avg60\x18\x03 \x01(\x01R\x05avg60\x12\x16\n" +
-	"\x06avg300\x18\x04 \x01(\x01R\x06avg300\"X\n" +
+	"\x13proto/metrics.proto\x12\ametrics\x1a\x1egoogle/protobuf/wrappers.proto\"\xdb\x01\n" +
+	"\aPsiData\x122\n" +
+	"\x05total\x18\x01 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x05total\x122\n" +
+	"\x05avg10\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05avg10\x122\n" +
+	"\x05avg60\x18\x03 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05avg60\x124\n" +
+	"\x06avg300\x18\x04 \x01(\v2\x1c.google.protobuf.DoubleValueR\x06avg300\"X\n" +
 	"\n" +
 	"PsiMetrics\x12$\n" +
 	"\x04some\x18\x01 \x01(\v2\x10.metrics.PsiDataR\x04some\x12$\n" +
@@ -1084,36 +1085,36 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\x0fpsi_cpu_metrics\x18\x13 \x01(\v2\x13.metrics.PsiMetricsR\rpsiCpuMetrics\x12A\n" +
 	"\x12psi_memory_metrics\x18\x14 \x01(\v2\x13.metrics.PsiMetricsR\x10psiMemoryMetrics\x129\n" +
 	"\x0epsi_io_metrics\x18\x15 \x01(\v2\x13.metrics.PsiMetricsR\fpsiIoMetrics\x12E\n" +
-	"\x12network_interfaces\x18\x16 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\x8b\x01\n" +
+	"\x12network_interfaces\x18\x16 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\xc7\x01\n" +
 	"\n" +
 	"CpuMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12(\n" +
-	"\x10usage_nano_cores\x18\x02 \x01(\x03R\x0eusageNanoCores\x125\n" +
-	"\x17usage_core_nano_seconds\x18\x03 \x01(\x03R\x14usageCoreNanoSeconds\"\x8d\x02\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12F\n" +
+	"\x10usage_nano_cores\x18\x02 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0eusageNanoCores\x12S\n" +
+	"\x17usage_core_nano_seconds\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x14usageCoreNanoSeconds\"\xc1\x03\n" +
 	"\rMemoryMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12*\n" +
-	"\x11working_set_bytes\x18\x02 \x01(\x03R\x0fworkingSetBytes\x12'\n" +
-	"\x0favailable_bytes\x18\x03 \x01(\x03R\x0eavailableBytes\x12\x1f\n" +
-	"\vusage_bytes\x18\x04 \x01(\x03R\n" +
-	"usageBytes\x12\x1b\n" +
-	"\trss_bytes\x18\x05 \x01(\x03R\brssBytes\x12\x1f\n" +
-	"\vpage_faults\x18\x06 \x01(\x03R\n" +
-	"pageFaults\x12*\n" +
-	"\x11major_page_faults\x18\a \x01(\x03R\x0fmajorPageFaults\"\x91\x01\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12H\n" +
+	"\x11working_set_bytes\x18\x02 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0fworkingSetBytes\x12E\n" +
+	"\x0favailable_bytes\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0eavailableBytes\x12=\n" +
+	"\vusage_bytes\x18\x04 \x01(\v2\x1c.google.protobuf.UInt64ValueR\n" +
+	"usageBytes\x129\n" +
+	"\trss_bytes\x18\x05 \x01(\v2\x1c.google.protobuf.UInt64ValueR\brssBytes\x12=\n" +
+	"\vpage_faults\x18\x06 \x01(\v2\x1c.google.protobuf.UInt64ValueR\n" +
+	"pageFaults\x12H\n" +
+	"\x11major_page_faults\x18\a \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0fmajorPageFaults\"\xcd\x01\n" +
 	"\x11FileSystemMetrics\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x1e\n" +
 	"\n" +
 	"mountpoint\x18\x02 \x01(\tR\n" +
-	"mountpoint\x12\x1d\n" +
+	"mountpoint\x12;\n" +
 	"\n" +
-	"used_bytes\x18\x03 \x01(\x03R\tusedBytes\x12\x1f\n" +
-	"\vinodes_used\x18\x04 \x01(\x03R\n" +
-	"inodesUsed\"u\n" +
+	"used_bytes\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\tusedBytes\x12=\n" +
+	"\vinodes_used\x18\x04 \x01(\v2\x1c.google.protobuf.UInt64ValueR\n" +
+	"inodesUsed\"\xb1\x01\n" +
 	"\vSwapMetrics\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12'\n" +
-	"\x0favailable_bytes\x18\x02 \x01(\x03R\x0eavailableBytes\x12\x1f\n" +
-	"\vusage_bytes\x18\x03 \x01(\x03R\n" +
-	"usageBytes\"\x95\x03\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12E\n" +
+	"\x0favailable_bytes\x18\x02 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0eavailableBytes\x12=\n" +
+	"\vusage_bytes\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\n" +
+	"usageBytes\"\xab\x03\n" +
 	"\x10ContainerMetrics\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -1125,9 +1126,10 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\vcpu_metrics\x18\a \x01(\v2\x13.metrics.CpuMetricsR\n" +
 	"cpuMetrics\x12=\n" +
 	"\x0ememory_metrics\x18\b \x01(\v2\x16.metrics.MemoryMetricsR\rmemoryMetrics\x12J\n" +
-	"\x13file_system_metrics\x18\t \x01(\v2\x1a.metrics.FileSystemMetricsR\x11fileSystemMetrics\x127\n" +
+	"\x13file_system_metrics\x18\t \x01(\v2\x1a.metrics.FileSystemMetricsR\x11fileSystemMetrics\x12<\n" +
 	"\fswap_metrics\x18\n" +
-	" \x01(\v2\x14.metrics.SwapMetricsR\vswapMetrics\"\xf7\x01\n" +
+	" \x01(\v2\x14.metrics.SwapMetricsH\x00R\vswapMetrics\x88\x01\x01B\x0f\n" +
+	"\r_swap_metrics\"\xf7\x01\n" +
 	"\n" +
 	"PodMetrics\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
@@ -1163,40 +1165,58 @@ func file_proto_metrics_proto_rawDescGZIP() []byte {
 
 var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_proto_metrics_proto_goTypes = []any{
-	(*PsiData)(nil),           // 0: metrics.PsiData
-	(*PsiMetrics)(nil),        // 1: metrics.PsiMetrics
-	(*InterfaceStat)(nil),     // 2: metrics.InterfaceStat
-	(*NodeMetrics)(nil),       // 3: metrics.NodeMetrics
-	(*CpuMetrics)(nil),        // 4: metrics.CpuMetrics
-	(*MemoryMetrics)(nil),     // 5: metrics.MemoryMetrics
-	(*FileSystemMetrics)(nil), // 6: metrics.FileSystemMetrics
-	(*SwapMetrics)(nil),       // 7: metrics.SwapMetrics
-	(*ContainerMetrics)(nil),  // 8: metrics.ContainerMetrics
-	(*PodMetrics)(nil),        // 9: metrics.PodMetrics
-	(*Metrics)(nil),           // 10: metrics.Metrics
-	(*Ack)(nil),               // 11: metrics.Ack
+	(*PsiData)(nil),                // 0: metrics.PsiData
+	(*PsiMetrics)(nil),             // 1: metrics.PsiMetrics
+	(*InterfaceStat)(nil),          // 2: metrics.InterfaceStat
+	(*NodeMetrics)(nil),            // 3: metrics.NodeMetrics
+	(*CpuMetrics)(nil),             // 4: metrics.CpuMetrics
+	(*MemoryMetrics)(nil),          // 5: metrics.MemoryMetrics
+	(*FileSystemMetrics)(nil),      // 6: metrics.FileSystemMetrics
+	(*SwapMetrics)(nil),            // 7: metrics.SwapMetrics
+	(*ContainerMetrics)(nil),       // 8: metrics.ContainerMetrics
+	(*PodMetrics)(nil),             // 9: metrics.PodMetrics
+	(*Metrics)(nil),                // 10: metrics.Metrics
+	(*Ack)(nil),                    // 11: metrics.Ack
+	(*wrapperspb.UInt64Value)(nil), // 12: google.protobuf.UInt64Value
+	(*wrapperspb.DoubleValue)(nil), // 13: google.protobuf.DoubleValue
 }
 var file_proto_metrics_proto_depIdxs = []int32{
-	0,  // 0: metrics.PsiMetrics.some:type_name -> metrics.PsiData
-	0,  // 1: metrics.PsiMetrics.full:type_name -> metrics.PsiData
-	1,  // 2: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
-	1,  // 3: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
-	1,  // 4: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
-	2,  // 5: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
-	4,  // 6: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
-	5,  // 7: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
-	6,  // 8: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
-	7,  // 9: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
-	8,  // 10: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
-	3,  // 11: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
-	9,  // 12: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
-	10, // 13: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
-	11, // 14: metrics.MetricsService.SendMetrics:output_type -> metrics.Ack
-	14, // [14:15] is the sub-list for method output_type
-	13, // [13:14] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	12, // 0: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
+	13, // 1: metrics.PsiData.avg10:type_name -> google.protobuf.DoubleValue
+	13, // 2: metrics.PsiData.avg60:type_name -> google.protobuf.DoubleValue
+	13, // 3: metrics.PsiData.avg300:type_name -> google.protobuf.DoubleValue
+	0,  // 4: metrics.PsiMetrics.some:type_name -> metrics.PsiData
+	0,  // 5: metrics.PsiMetrics.full:type_name -> metrics.PsiData
+	1,  // 6: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
+	1,  // 7: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
+	1,  // 8: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
+	2,  // 9: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
+	12, // 10: metrics.CpuMetrics.usage_nano_cores:type_name -> google.protobuf.UInt64Value
+	12, // 11: metrics.CpuMetrics.usage_core_nano_seconds:type_name -> google.protobuf.UInt64Value
+	12, // 12: metrics.MemoryMetrics.working_set_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 13: metrics.MemoryMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 14: metrics.MemoryMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 15: metrics.MemoryMetrics.rss_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 16: metrics.MemoryMetrics.page_faults:type_name -> google.protobuf.UInt64Value
+	12, // 17: metrics.MemoryMetrics.major_page_faults:type_name -> google.protobuf.UInt64Value
+	12, // 18: metrics.FileSystemMetrics.used_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 19: metrics.FileSystemMetrics.inodes_used:type_name -> google.protobuf.UInt64Value
+	12, // 20: metrics.SwapMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
+	12, // 21: metrics.SwapMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
+	4,  // 22: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
+	5,  // 23: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
+	6,  // 24: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
+	7,  // 25: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
+	8,  // 26: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
+	3,  // 27: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
+	9,  // 28: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
+	10, // 29: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
+	11, // 30: metrics.MetricsService.SendMetrics:output_type -> metrics.Ack
+	30, // [30:31] is the sub-list for method output_type
+	29, // [29:30] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_proto_metrics_proto_init() }
@@ -1204,6 +1224,7 @@ func file_proto_metrics_proto_init() {
 	if File_proto_metrics_proto != nil {
 		return
 	}
+	file_proto_metrics_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

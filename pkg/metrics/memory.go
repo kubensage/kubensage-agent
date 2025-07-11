@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -14,14 +15,40 @@ func SafeMemoryMetrics(stats *runtimeapi.ContainerStats) *proto.MemoryMetrics {
 		return &proto.MemoryMetrics{}
 	}
 
+	var workingSetBytes, availableBytes, usageBytes, rssBytes, pageFaults, majorPageFaults *wrapperspb.UInt64Value
+
+	if stats.Memory.WorkingSetBytes != nil {
+		workingSetBytes = utils.ConvertCRIUInt64(stats.Memory.WorkingSetBytes)
+	}
+
+	if stats.Memory.AvailableBytes != nil {
+		availableBytes = utils.ConvertCRIUInt64(stats.Memory.AvailableBytes)
+	}
+
+	if stats.Memory.UsageBytes != nil {
+		usageBytes = utils.ConvertCRIUInt64(stats.Memory.UsageBytes)
+	}
+
+	if stats.Memory.RssBytes != nil {
+		rssBytes = utils.ConvertCRIUInt64(stats.Memory.RssBytes)
+	}
+
+	if stats.Memory.PageFaults != nil {
+		pageFaults = utils.ConvertCRIUInt64(stats.Memory.PageFaults)
+	}
+
+	if stats.Memory.MajorPageFaults != nil {
+		majorPageFaults = utils.ConvertCRIUInt64(stats.Memory.MajorPageFaults)
+	}
+
 	metrics := &proto.MemoryMetrics{
 		Timestamp:       stats.Memory.Timestamp,
-		WorkingSetBytes: utils.SafeUint64ValueToInt64OrDefault(stats.Memory.WorkingSetBytes, -1),
-		AvailableBytes:  utils.SafeUint64ValueToInt64OrDefault(stats.Memory.AvailableBytes, -1),
-		UsageBytes:      utils.SafeUint64ValueToInt64OrDefault(stats.Memory.UsageBytes, -1),
-		RssBytes:        utils.SafeUint64ValueToInt64OrDefault(stats.Memory.RssBytes, -1),
-		PageFaults:      utils.SafeUint64ValueToInt64OrDefault(stats.Memory.PageFaults, -1),
-		MajorPageFaults: utils.SafeUint64ValueToInt64OrDefault(stats.Memory.MajorPageFaults, -1),
+		WorkingSetBytes: workingSetBytes,
+		AvailableBytes:  availableBytes,
+		UsageBytes:      usageBytes,
+		RssBytes:        rssBytes,
+		PageFaults:      pageFaults,
+		MajorPageFaults: majorPageFaults,
 	}
 
 	return metrics
