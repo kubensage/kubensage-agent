@@ -253,6 +253,8 @@ func metricsLoop(
 				continue
 			}
 
+			logger.Debug("Metrics", zap.Any("metrics", metrics))
+
 			// Attempt to send metrics; on failure, reconnect and retry once
 			if err := stream.Send(metrics); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))

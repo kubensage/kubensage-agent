@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -15,10 +16,20 @@ func SafeCpuMetrics(stats *runtimeapi.ContainerStats) *proto.CpuMetrics {
 		return &proto.CpuMetrics{}
 	}
 
+	var usageCoreNanoSeconds, usageNanoCores *wrapperspb.UInt64Value
+
+	if stats.Cpu.UsageCoreNanoSeconds != nil {
+		usageCoreNanoSeconds = utils.ConvertCRIUInt64(stats.Cpu.UsageCoreNanoSeconds)
+	}
+
+	if stats.Cpu.UsageNanoCores != nil {
+		usageNanoCores = utils.ConvertCRIUInt64(stats.Cpu.UsageNanoCores)
+	}
+
 	metrics := &proto.CpuMetrics{
 		Timestamp:            stats.Cpu.Timestamp,
-		UsageCoreNanoSeconds: utils.SafeUint64ValueToInt64OrDefault(stats.Cpu.UsageCoreNanoSeconds, -1),
-		UsageNanoCores:       utils.SafeUint64ValueToInt64OrDefault(stats.Cpu.UsageNanoCores, -1),
+		UsageCoreNanoSeconds: usageCoreNanoSeconds,
+		UsageNanoCores:       usageNanoCores,
 	}
 
 	return metrics

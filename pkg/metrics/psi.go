@@ -4,6 +4,7 @@ import (
 	"bufio"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"os"
 	"strconv"
 	"strings"
@@ -16,7 +17,6 @@ func SafePsiMetrics(path string, logger *zap.Logger) *proto.PsiMetrics {
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Error("Failed to open metrics file", zap.String("path", path), zap.Error(err))
-		// Return zero-value metrics but continue
 		return &proto.PsiMetrics{}
 	}
 	defer func(file *os.File) {
@@ -32,30 +32,38 @@ func SafePsiMetrics(path string, logger *zap.Logger) *proto.PsiMetrics {
 		line := scanner.Text()
 		parts := strings.Fields(line)
 
-		// Expecting lines like: "some avg10=... avg60=... avg300=... total=..."
 		if len(parts) < 5 {
 			continue
 		}
 
 		entry := &proto.PsiData{}
+
 		for _, part := range parts[1:] {
 			kv := strings.Split(part, "=")
 			if len(kv) != 2 {
 				continue
 			}
+
 			switch kv[0] {
 			case "avg10":
-				entry.Avg10, _ = strconv.ParseFloat(kv[1], 64)
+				if val, err := strconv.ParseFloat(kv[1], 64); err == nil {
+					entry.Avg10 = wrapperspb.Double(val)
+				}
 			case "avg60":
-				entry.Avg60, _ = strconv.ParseFloat(kv[1], 64)
+				if val, err := strconv.ParseFloat(kv[1], 64); err == nil {
+					entry.Avg60 = wrapperspb.Double(val)
+				}
 			case "avg300":
-				entry.Avg300, _ = strconv.ParseFloat(kv[1], 64)
+				if val, err := strconv.ParseFloat(kv[1], 64); err == nil {
+					entry.Avg300 = wrapperspb.Double(val)
+				}
 			case "total":
-				entry.Total, _ = strconv.ParseUint(kv[1], 10, 64)
+				if val, err := strconv.ParseUint(kv[1], 10, 64); err == nil {
+					entry.Total = wrapperspb.UInt64(val)
+				}
 			}
 		}
 
-		// Assign parsed PSI data to the appropriate section ("some" or "full")
 		switch parts[0] {
 		case "some":
 			metrics.Some = entry
