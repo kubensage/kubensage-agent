@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"github.com/kubensage/go-common/cli"
+	"github.com/kubensage/go-common/log"
+	"github.com/kubensage/kubensage-agent/pkg/discovery"
 	"github.com/kubensage/kubensage-agent/pkg/metrics"
+	"github.com/kubensage/kubensage-agent/pkg/utils"
+	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -11,15 +16,11 @@ import (
 	"runtime"
 	"syscall"
 	"time"
-
-	"github.com/kubensage/kubensage-agent/pkg/discovery"
-	"github.com/kubensage/kubensage-agent/pkg/utils"
-	proto "github.com/kubensage/kubensage-agent/proto/gen"
 )
 
 func main() {
-	flags := utils.ParseFlags()
-	logger := utils.SetupLogger(flags)
+	flags := cli.ParseFlags()
+	logger := log.SetupLogger(flags)
 
 	// Log basic runtime info on agent startup
 	logger.Info("kubensage-agent started", zap.String("version", runtime.Version()),
