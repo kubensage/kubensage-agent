@@ -22,9 +22,17 @@ func main() {
 	flags := cli.ParseFlags()
 	logger := log.SetupLogger(flags)
 
-	// Log basic runtime info on agent startup
-	logger.Info("kubensage-agent started", zap.String("version", runtime.Version()),
-		zap.Time("start_time", time.Now()))
+	exePath, err := os.Executable()
+	if err != nil {
+		logger.Warn("Could not determine executable path", zap.Error(err))
+		exePath = "unknown"
+	}
+
+	logger.Info("kubensage-agent started",
+		zap.String("go_version", runtime.Version()),
+		zap.String("executable", exePath),
+		zap.Time("start_time", time.Now()),
+	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Ensures all context-aware operations can exit cleanly
