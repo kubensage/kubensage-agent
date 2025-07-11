@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	flags := cli.ParseFlags()
+	flags := cli.ParseFlags("kubensage-agent")
 	logger := log.SetupLogger(flags)
 
 	exePath, err := os.Executable()
