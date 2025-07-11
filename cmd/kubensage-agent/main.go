@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/kubensage/kubensage-agent/pkg/converter"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -254,14 +253,8 @@ func metricsLoop(
 				continue
 			}
 
-			converted, err := converter.ConvertToProto(metrics)
-			if err != nil {
-				logger.Error("Failed to convert metrics", zap.Error(err))
-				continue
-			}
-
 			// Attempt to send metrics; on failure, reconnect and retry once
-			if err := stream.Send(converted); err != nil {
+			if err := stream.Send(metrics); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
 
 				_ = stream.CloseSend() // Ensure we explicitly close the failed stream
@@ -269,7 +262,7 @@ func metricsLoop(
 				stream = openStreamWithRetry(ctx, relayClient, logger)
 				logger.Info("Reconnected to stream successfully")
 
-				err2 := stream.Send(converted)
+				err2 := stream.Send(metrics)
 				if err2 != nil {
 					logger.Error("Send after reconnect failed", zap.Error(err2))
 					continue
@@ -277,7 +270,7 @@ func metricsLoop(
 
 				logger.Info("Send after reconnect succeeded")
 			} else {
-				logger.Info("Metrics sent successfully", zap.Int("n_of_discovered_pods", len(converted.PodMetrics)))
+				logger.Info("Metrics sent successfully", zap.Int("n_of_discovered_pods", len(metrics.PodMetrics)))
 			}
 		}
 	}

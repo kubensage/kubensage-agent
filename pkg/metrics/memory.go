@@ -2,31 +2,19 @@ package metrics
 
 import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
+	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
-
-// MemoryMetrics contains memory usage statistics for a container.
-// All numeric fields are represented as int64 and default to -1 if the source data is missing.
-
-type MemoryMetrics struct {
-	Timestamp       int64 // Timestamp of the memory stat collection
-	WorkingSetBytes int64 // "Working set" memory in bytes
-	AvailableBytes  int64 // Available memory in bytes
-	UsageBytes      int64 // Total memory usage in bytes
-	RssBytes        int64 // Resident Set Size (non-swapped) in bytes
-	PageFaults      int64 // Total page faults
-	MajorPageFaults int64 // Major page faults (disk access)
-}
 
 // SafeMemoryMetrics safely extracts memory metrics from a ContainerStats object.
 // If stats.Memory is nil, it returns an empty struct with zeroed values.
 // Optional fields are safely converted to int64 using a fallback of -1.
-func SafeMemoryMetrics(stats *runtimeapi.ContainerStats) MemoryMetrics {
+func SafeMemoryMetrics(stats *runtimeapi.ContainerStats) *proto.MemoryMetrics {
 	if stats.Memory == nil {
-		return MemoryMetrics{}
+		return &proto.MemoryMetrics{}
 	}
 
-	metrics := MemoryMetrics{
+	metrics := &proto.MemoryMetrics{
 		Timestamp:       stats.Memory.Timestamp,
 		WorkingSetBytes: utils.SafeUint64ValueToInt64OrDefault(stats.Memory.WorkingSetBytes, -1),
 		AvailableBytes:  utils.SafeUint64ValueToInt64OrDefault(stats.Memory.AvailableBytes, -1),

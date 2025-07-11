@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// --- PSI Metrics ---
 type PsiData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Total         uint64                 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
@@ -141,50 +142,7 @@ func (x *PsiMetrics) GetFull() *PsiData {
 	return nil
 }
 
-type InterfaceAddr struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Addr          string                 `protobuf:"bytes,1,opt,name=addr,proto3" json:"addr,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *InterfaceAddr) Reset() {
-	*x = InterfaceAddr{}
-	mi := &file_proto_metrics_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *InterfaceAddr) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*InterfaceAddr) ProtoMessage() {}
-
-func (x *InterfaceAddr) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use InterfaceAddr.ProtoReflect.Descriptor instead.
-func (*InterfaceAddr) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *InterfaceAddr) GetAddr() string {
-	if x != nil {
-		return x.Addr
-	}
-	return ""
-}
-
+// --- Network Interfaces ---
 type InterfaceStat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Index         int32                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
@@ -192,14 +150,14 @@ type InterfaceStat struct {
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	HardwareAddr  string                 `protobuf:"bytes,4,opt,name=hardwareAddr,proto3" json:"hardwareAddr,omitempty"`
 	Flags         []string               `protobuf:"bytes,5,rep,name=flags,proto3" json:"flags,omitempty"`
-	Addrs         []*InterfaceAddr       `protobuf:"bytes,6,rep,name=addrs,proto3" json:"addrs,omitempty"`
+	Addrs         []string               `protobuf:"bytes,6,rep,name=addrs,proto3" json:"addrs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InterfaceStat) Reset() {
 	*x = InterfaceStat{}
-	mi := &file_proto_metrics_proto_msgTypes[3]
+	mi := &file_proto_metrics_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -211,7 +169,7 @@ func (x *InterfaceStat) String() string {
 func (*InterfaceStat) ProtoMessage() {}
 
 func (x *InterfaceStat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[3]
+	mi := &file_proto_metrics_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -224,7 +182,7 @@ func (x *InterfaceStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterfaceStat.ProtoReflect.Descriptor instead.
 func (*InterfaceStat) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{3}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *InterfaceStat) GetIndex() int32 {
@@ -262,13 +220,14 @@ func (x *InterfaceStat) GetFlags() []string {
 	return nil
 }
 
-func (x *InterfaceStat) GetAddrs() []*InterfaceAddr {
+func (x *InterfaceStat) GetAddrs() []string {
 	if x != nil {
 		return x.Addrs
 	}
 	return nil
 }
 
+// --- Node Metrics ---
 type NodeMetrics struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Hostname          string                 `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
@@ -299,7 +258,7 @@ type NodeMetrics struct {
 
 func (x *NodeMetrics) Reset() {
 	*x = NodeMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[4]
+	mi := &file_proto_metrics_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +270,7 @@ func (x *NodeMetrics) String() string {
 func (*NodeMetrics) ProtoMessage() {}
 
 func (x *NodeMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[4]
+	mi := &file_proto_metrics_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -324,7 +283,7 @@ func (x *NodeMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeMetrics.ProtoReflect.Descriptor instead.
 func (*NodeMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{4}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *NodeMetrics) GetHostname() string {
@@ -481,6 +440,7 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 	return nil
 }
 
+// --- Container Metrics ---
 type CpuMetrics struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp            int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -492,7 +452,7 @@ type CpuMetrics struct {
 
 func (x *CpuMetrics) Reset() {
 	*x = CpuMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[5]
+	mi := &file_proto_metrics_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -504,7 +464,7 @@ func (x *CpuMetrics) String() string {
 func (*CpuMetrics) ProtoMessage() {}
 
 func (x *CpuMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[5]
+	mi := &file_proto_metrics_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +477,7 @@ func (x *CpuMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CpuMetrics.ProtoReflect.Descriptor instead.
 func (*CpuMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{5}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CpuMetrics) GetTimestamp() int64 {
@@ -556,7 +516,7 @@ type MemoryMetrics struct {
 
 func (x *MemoryMetrics) Reset() {
 	*x = MemoryMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[6]
+	mi := &file_proto_metrics_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +528,7 @@ func (x *MemoryMetrics) String() string {
 func (*MemoryMetrics) ProtoMessage() {}
 
 func (x *MemoryMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[6]
+	mi := &file_proto_metrics_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +541,7 @@ func (x *MemoryMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryMetrics.ProtoReflect.Descriptor instead.
 func (*MemoryMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{6}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *MemoryMetrics) GetTimestamp() int64 {
@@ -645,7 +605,7 @@ type FileSystemMetrics struct {
 
 func (x *FileSystemMetrics) Reset() {
 	*x = FileSystemMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[7]
+	mi := &file_proto_metrics_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +617,7 @@ func (x *FileSystemMetrics) String() string {
 func (*FileSystemMetrics) ProtoMessage() {}
 
 func (x *FileSystemMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[7]
+	mi := &file_proto_metrics_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +630,7 @@ func (x *FileSystemMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileSystemMetrics.ProtoReflect.Descriptor instead.
 func (*FileSystemMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{7}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *FileSystemMetrics) GetTimestamp() int64 {
@@ -712,7 +672,7 @@ type SwapMetrics struct {
 
 func (x *SwapMetrics) Reset() {
 	*x = SwapMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[8]
+	mi := &file_proto_metrics_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +684,7 @@ func (x *SwapMetrics) String() string {
 func (*SwapMetrics) ProtoMessage() {}
 
 func (x *SwapMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[8]
+	mi := &file_proto_metrics_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -737,7 +697,7 @@ func (x *SwapMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SwapMetrics.ProtoReflect.Descriptor instead.
 func (*SwapMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{8}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SwapMetrics) GetTimestamp() int64 {
@@ -761,6 +721,7 @@ func (x *SwapMetrics) GetUsageBytes() int64 {
 	return 0
 }
 
+// --- Container (within Pod) ---
 type ContainerMetrics struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -779,7 +740,7 @@ type ContainerMetrics struct {
 
 func (x *ContainerMetrics) Reset() {
 	*x = ContainerMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[9]
+	mi := &file_proto_metrics_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -791,7 +752,7 @@ func (x *ContainerMetrics) String() string {
 func (*ContainerMetrics) ProtoMessage() {}
 
 func (x *ContainerMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[9]
+	mi := &file_proto_metrics_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -804,7 +765,7 @@ func (x *ContainerMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerMetrics.ProtoReflect.Descriptor instead.
 func (*ContainerMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{9}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ContainerMetrics) GetId() string {
@@ -877,6 +838,7 @@ func (x *ContainerMetrics) GetSwapMetrics() *SwapMetrics {
 	return nil
 }
 
+// --- Pod Metrics ---
 type PodMetrics struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -893,7 +855,7 @@ type PodMetrics struct {
 
 func (x *PodMetrics) Reset() {
 	*x = PodMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[10]
+	mi := &file_proto_metrics_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -905,7 +867,7 @@ func (x *PodMetrics) String() string {
 func (*PodMetrics) ProtoMessage() {}
 
 func (x *PodMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[10]
+	mi := &file_proto_metrics_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -918,7 +880,7 @@ func (x *PodMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodMetrics.ProtoReflect.Descriptor instead.
 func (*PodMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{10}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PodMetrics) GetId() string {
@@ -977,6 +939,7 @@ func (x *PodMetrics) GetContainerMetrics() []*ContainerMetrics {
 	return nil
 }
 
+// --- Root Metrics Message ---
 type Metrics struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeMetrics   *NodeMetrics           `protobuf:"bytes,1,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`
@@ -987,7 +950,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_proto_metrics_proto_msgTypes[11]
+	mi := &file_proto_metrics_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -999,7 +962,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[11]
+	mi := &file_proto_metrics_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1012,7 +975,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{11}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Metrics) GetNodeMetrics() *NodeMetrics {
@@ -1029,6 +992,7 @@ func (x *Metrics) GetPodMetrics() []*PodMetrics {
 	return nil
 }
 
+// --- Service Definition ---
 type Ack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -1038,7 +1002,7 @@ type Ack struct {
 
 func (x *Ack) Reset() {
 	*x = Ack{}
-	mi := &file_proto_metrics_proto_msgTypes[12]
+	mi := &file_proto_metrics_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1050,7 +1014,7 @@ func (x *Ack) String() string {
 func (*Ack) ProtoMessage() {}
 
 func (x *Ack) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[12]
+	mi := &file_proto_metrics_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1063,7 +1027,7 @@ func (x *Ack) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ack.ProtoReflect.Descriptor instead.
 func (*Ack) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{12}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Ack) GetMessage() string {
@@ -1086,16 +1050,14 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\n" +
 	"PsiMetrics\x12$\n" +
 	"\x04some\x18\x01 \x01(\v2\x10.metrics.PsiDataR\x04some\x12$\n" +
-	"\x04full\x18\x02 \x01(\v2\x10.metrics.PsiDataR\x04full\"#\n" +
-	"\rInterfaceAddr\x12\x12\n" +
-	"\x04addr\x18\x01 \x01(\tR\x04addr\"\xb3\x01\n" +
+	"\x04full\x18\x02 \x01(\v2\x10.metrics.PsiDataR\x04full\"\x9b\x01\n" +
 	"\rInterfaceStat\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12\x10\n" +
 	"\x03mtu\x18\x02 \x01(\x05R\x03mtu\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\"\n" +
 	"\fhardwareAddr\x18\x04 \x01(\tR\fhardwareAddr\x12\x14\n" +
-	"\x05flags\x18\x05 \x03(\tR\x05flags\x12,\n" +
-	"\x05addrs\x18\x06 \x03(\v2\x16.metrics.InterfaceAddrR\x05addrs\"\xcc\x06\n" +
+	"\x05flags\x18\x05 \x03(\tR\x05flags\x12\x14\n" +
+	"\x05addrs\x18\x06 \x03(\tR\x05addrs\"\xcc\x06\n" +
 	"\vNodeMetrics\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x16\n" +
 	"\x06uptime\x18\x02 \x01(\x04R\x06uptime\x12\x1b\n" +
@@ -1199,44 +1161,42 @@ func file_proto_metrics_proto_rawDescGZIP() []byte {
 	return file_proto_metrics_proto_rawDescData
 }
 
-var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_proto_metrics_proto_goTypes = []any{
 	(*PsiData)(nil),           // 0: metrics.PsiData
 	(*PsiMetrics)(nil),        // 1: metrics.PsiMetrics
-	(*InterfaceAddr)(nil),     // 2: metrics.InterfaceAddr
-	(*InterfaceStat)(nil),     // 3: metrics.InterfaceStat
-	(*NodeMetrics)(nil),       // 4: metrics.NodeMetrics
-	(*CpuMetrics)(nil),        // 5: metrics.CpuMetrics
-	(*MemoryMetrics)(nil),     // 6: metrics.MemoryMetrics
-	(*FileSystemMetrics)(nil), // 7: metrics.FileSystemMetrics
-	(*SwapMetrics)(nil),       // 8: metrics.SwapMetrics
-	(*ContainerMetrics)(nil),  // 9: metrics.ContainerMetrics
-	(*PodMetrics)(nil),        // 10: metrics.PodMetrics
-	(*Metrics)(nil),           // 11: metrics.Metrics
-	(*Ack)(nil),               // 12: metrics.Ack
+	(*InterfaceStat)(nil),     // 2: metrics.InterfaceStat
+	(*NodeMetrics)(nil),       // 3: metrics.NodeMetrics
+	(*CpuMetrics)(nil),        // 4: metrics.CpuMetrics
+	(*MemoryMetrics)(nil),     // 5: metrics.MemoryMetrics
+	(*FileSystemMetrics)(nil), // 6: metrics.FileSystemMetrics
+	(*SwapMetrics)(nil),       // 7: metrics.SwapMetrics
+	(*ContainerMetrics)(nil),  // 8: metrics.ContainerMetrics
+	(*PodMetrics)(nil),        // 9: metrics.PodMetrics
+	(*Metrics)(nil),           // 10: metrics.Metrics
+	(*Ack)(nil),               // 11: metrics.Ack
 }
 var file_proto_metrics_proto_depIdxs = []int32{
 	0,  // 0: metrics.PsiMetrics.some:type_name -> metrics.PsiData
 	0,  // 1: metrics.PsiMetrics.full:type_name -> metrics.PsiData
-	2,  // 2: metrics.InterfaceStat.addrs:type_name -> metrics.InterfaceAddr
-	1,  // 3: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
-	1,  // 4: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
-	1,  // 5: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
-	3,  // 6: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
-	5,  // 7: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
-	6,  // 8: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
-	7,  // 9: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
-	8,  // 10: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
-	9,  // 11: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
-	4,  // 12: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
-	10, // 13: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
-	11, // 14: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
-	12, // 15: metrics.MetricsService.SendMetrics:output_type -> metrics.Ack
-	15, // [15:16] is the sub-list for method output_type
-	14, // [14:15] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	1,  // 2: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
+	1,  // 3: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
+	1,  // 4: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
+	2,  // 5: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
+	4,  // 6: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
+	5,  // 7: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
+	6,  // 8: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
+	7,  // 9: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
+	8,  // 10: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
+	3,  // 11: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
+	9,  // 12: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
+	10, // 13: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
+	11, // 14: metrics.MetricsService.SendMetrics:output_type -> metrics.Ack
+	14, // [14:15] is the sub-list for method output_type
+	13, // [13:14] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_proto_metrics_proto_init() }
@@ -1250,7 +1210,7 @@ func file_proto_metrics_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_metrics_proto_rawDesc), len(file_proto_metrics_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

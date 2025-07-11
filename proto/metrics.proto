@@ -5,7 +5,6 @@ package metrics;
 option go_package = "/proto/gen";
 
 // --- PSI Metrics ---
-
 message PsiData {
   uint64 total = 1;
   double avg10 = 2;
@@ -19,22 +18,16 @@ message PsiMetrics {
 }
 
 // --- Network Interfaces ---
-
-message InterfaceAddr {
-  string addr = 1;
-}
-
 message InterfaceStat {
   int32 index = 1;
   int32 mtu = 2;
   string name = 3;
   string hardwareAddr = 4;
   repeated string flags = 5;
-  repeated InterfaceAddr addrs = 6;
+  repeated string addrs = 6;
 }
 
 // --- Node Metrics ---
-
 message NodeMetrics {
   string hostname = 1;
   uint64 uptime = 2;
@@ -65,7 +58,6 @@ message NodeMetrics {
 }
 
 // --- Container Metrics ---
-
 message CpuMetrics {
   int64 timestamp = 1;
   int64 usage_nano_cores = 2;
@@ -96,7 +88,6 @@ message SwapMetrics {
 }
 
 // --- Container (within Pod) ---
-
 message ContainerMetrics {
   string id = 1;
   string name = 2;
@@ -112,7 +103,6 @@ message ContainerMetrics {
 }
 
 // --- Pod Metrics ---
-
 message PodMetrics {
   string id = 1;
   string uid = 2;
@@ -126,14 +116,12 @@ message PodMetrics {
 }
 
 // --- Root Metrics Message ---
-
 message Metrics {
   NodeMetrics node_metrics = 1;
   repeated PodMetrics pod_metrics = 2;
 }
 
 // --- Service Definition ---
-
 message Ack {
   string message = 1;
 }
