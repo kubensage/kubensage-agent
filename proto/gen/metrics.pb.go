@@ -734,7 +734,7 @@ type ContainerMetrics struct {
 	CpuMetrics        *CpuMetrics            `protobuf:"bytes,7,opt,name=cpu_metrics,json=cpuMetrics,proto3" json:"cpu_metrics,omitempty"`
 	MemoryMetrics     *MemoryMetrics         `protobuf:"bytes,8,opt,name=memory_metrics,json=memoryMetrics,proto3" json:"memory_metrics,omitempty"`
 	FileSystemMetrics *FileSystemMetrics     `protobuf:"bytes,9,opt,name=file_system_metrics,json=fileSystemMetrics,proto3" json:"file_system_metrics,omitempty"`
-	SwapMetrics       *SwapMetrics           `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3,oneof" json:"swap_metrics,omitempty"`
+	SwapMetrics       *SwapMetrics           `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3" json:"swap_metrics,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1114,7 +1114,7 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12E\n" +
 	"\x0favailable_bytes\x18\x02 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x0eavailableBytes\x12=\n" +
 	"\vusage_bytes\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\n" +
-	"usageBytes\"\xab\x03\n" +
+	"usageBytes\"\x95\x03\n" +
 	"\x10ContainerMetrics\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -1126,10 +1126,9 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\vcpu_metrics\x18\a \x01(\v2\x13.metrics.CpuMetricsR\n" +
 	"cpuMetrics\x12=\n" +
 	"\x0ememory_metrics\x18\b \x01(\v2\x16.metrics.MemoryMetricsR\rmemoryMetrics\x12J\n" +
-	"\x13file_system_metrics\x18\t \x01(\v2\x1a.metrics.FileSystemMetricsR\x11fileSystemMetrics\x12<\n" +
+	"\x13file_system_metrics\x18\t \x01(\v2\x1a.metrics.FileSystemMetricsR\x11fileSystemMetrics\x127\n" +
 	"\fswap_metrics\x18\n" +
-	" \x01(\v2\x14.metrics.SwapMetricsH\x00R\vswapMetrics\x88\x01\x01B\x0f\n" +
-	"\r_swap_metrics\"\xf7\x01\n" +
+	" \x01(\v2\x14.metrics.SwapMetricsR\vswapMetrics\"\xf7\x01\n" +
 	"\n" +
 	"PodMetrics\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
@@ -1224,7 +1223,6 @@ func file_proto_metrics_proto_init() {
 	if File_proto_metrics_proto != nil {
 		return
 	}
-	file_proto_metrics_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

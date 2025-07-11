@@ -1,9 +1,9 @@
-package discovery
+package metrics
 
 import (
 	"context"
 	"fmt"
-	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
+	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
 // getContainers retrieves the list of running containers from the CRI runtime.
@@ -11,9 +11,9 @@ import (
 // If the request fails, it returns an error.
 func getContainers(
 	ctx context.Context,
-	runtimeClient runtimeapi.RuntimeServiceClient,
-) ([]*runtimeapi.Container, error) {
-	resp, err := runtimeClient.ListContainers(ctx, &runtimeapi.ListContainersRequest{})
+	runtimeClient cri.RuntimeServiceClient,
+) ([]*cri.Container, error) {
+	resp, err := runtimeClient.ListContainers(ctx, &cri.ListContainersRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers: %v", err.Error())
 	}
@@ -25,9 +25,9 @@ func getContainers(
 // it returns an appropriate error.
 func getContainersStats(
 	ctx context.Context,
-	runtimeClient runtimeapi.RuntimeServiceClient,
-) ([]*runtimeapi.ContainerStats, error) {
-	stats, err := runtimeClient.ListContainerStats(ctx, &runtimeapi.ListContainerStatsRequest{})
+	runtimeClient cri.RuntimeServiceClient,
+) ([]*cri.ContainerStats, error) {
+	stats, err := runtimeClient.ListContainerStats(ctx, &cri.ListContainerStatsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list container stats: %v", err.Error())
 	}
@@ -43,9 +43,9 @@ func getContainersStats(
 // matching the given container ID from the provided list.
 // If no match is found, it returns an error.
 func getContainerStatsByContainerId(
-	containersStats []*runtimeapi.ContainerStats,
+	containersStats []*cri.ContainerStats,
 	containerId string,
-) (*runtimeapi.ContainerStats, error) {
+) (*cri.ContainerStats, error) {
 	for _, s := range containersStats {
 		if s.Attributes.Id == containerId {
 			return s, nil

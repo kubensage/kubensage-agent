@@ -13,7 +13,7 @@ import (
 // SafePsiMetrics reads and parses pressure stall information (PSI) from the given /proc/pressure/<resource> file.
 // It safely extracts "some" and "full" pressure lines and their average/total values.
 // If the file cannot be opened or parsed, it logs the error and returns an empty PsiMetrics struct.
-func SafePsiMetrics(path string, logger *zap.Logger) *proto.PsiMetrics {
+func getPsiMetrics(path string, logger *zap.Logger) *proto.PsiMetrics {
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Error("Failed to open metrics file", zap.String("path", path), zap.Error(err))
