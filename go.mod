@@ -3,7 +3,7 @@ module github.com/kubensage/kubensage-agent
 go 1.24.4
 
 require (
-	github.com/kubensage/go-common v1.0.2
+	github.com/kubensage/go-common v1.0.4
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.73.0

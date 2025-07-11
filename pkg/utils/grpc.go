@@ -13,7 +13,7 @@ func SetupCRIConnection(
 	logger *zap.Logger,
 ) (client cri.RuntimeServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to CRI socket", zap.String("socket", socket))
-	conn := grpc2.AcquireGrpcConnection(socket, logger)
+	conn := grpc2.InsecureGrpcConnection(socket, logger)
 	logger.Info("Connected to CRI socket")
 	return cri.NewRuntimeServiceClient(conn), conn
 }
@@ -23,7 +23,7 @@ func SetupRelayConnection(
 	logger *zap.Logger,
 ) (client proto.MetricsServiceClient, connection *grpc.ClientConn) {
 	logger.Info("Connecting to relay GRPC server", zap.String("socket", addr))
-	conn := grpc2.AcquireGrpcConnection(addr, logger)
+	conn := grpc2.InsecureGrpcConnection(addr, logger)
 	logger.Info("Connected to relay GRPC server")
 	return proto.NewMetricsServiceClient(conn), conn
 }
