@@ -4,6 +4,7 @@ package metrics;
 
 option go_package = "/proto/gen";
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
 // --- PSI Metrics ---
@@ -129,5 +130,9 @@ message Ack {
 }
 
 service MetricsService {
-  rpc SendMetrics(stream Metrics) returns (Ack);
+  // In
+  rpc SendMetrics(stream Metrics) returns (google.protobuf.Empty);
+
+  // Out
+  rpc SubscribeMetrics(google.protobuf.Empty) returns (stream Metrics);
 }

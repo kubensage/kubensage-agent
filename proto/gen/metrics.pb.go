@@ -9,6 +9,7 @@ package gen
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
@@ -1042,7 +1043,7 @@ var File_proto_metrics_proto protoreflect.FileDescriptor
 
 const file_proto_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\x13proto/metrics.proto\x12\ametrics\x1a\x1egoogle/protobuf/wrappers.proto\"\xdb\x01\n" +
+	"\x13proto/metrics.proto\x12\ametrics\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xdb\x01\n" +
 	"\aPsiData\x122\n" +
 	"\x05total\x18\x01 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x05total\x122\n" +
 	"\x05avg10\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05avg10\x122\n" +
@@ -1145,9 +1146,10 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\vpod_metrics\x18\x02 \x03(\v2\x13.metrics.PodMetricsR\n" +
 	"podMetrics\"\x1f\n" +
 	"\x03Ack\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2A\n" +
-	"\x0eMetricsService\x12/\n" +
-	"\vSendMetrics\x12\x10.metrics.Metrics\x1a\f.metrics.Ack(\x01B\fZ\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\x8b\x01\n" +
+	"\x0eMetricsService\x129\n" +
+	"\vSendMetrics\x12\x10.metrics.Metrics\x1a\x16.google.protobuf.Empty(\x01\x12>\n" +
+	"\x10SubscribeMetrics\x12\x16.google.protobuf.Empty\x1a\x10.metrics.Metrics0\x01B\fZ\n" +
 	"/proto/genb\x06proto3"
 
 var (
@@ -1178,6 +1180,7 @@ var file_proto_metrics_proto_goTypes = []any{
 	(*Ack)(nil),                    // 11: metrics.Ack
 	(*wrapperspb.UInt64Value)(nil), // 12: google.protobuf.UInt64Value
 	(*wrapperspb.DoubleValue)(nil), // 13: google.protobuf.DoubleValue
+	(*emptypb.Empty)(nil),          // 14: google.protobuf.Empty
 }
 var file_proto_metrics_proto_depIdxs = []int32{
 	12, // 0: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
@@ -1210,9 +1213,11 @@ var file_proto_metrics_proto_depIdxs = []int32{
 	3,  // 27: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
 	9,  // 28: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
 	10, // 29: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
-	11, // 30: metrics.MetricsService.SendMetrics:output_type -> metrics.Ack
-	30, // [30:31] is the sub-list for method output_type
-	29, // [29:30] is the sub-list for method input_type
+	14, // 30: metrics.MetricsService.SubscribeMetrics:input_type -> google.protobuf.Empty
+	14, // 31: metrics.MetricsService.SendMetrics:output_type -> google.protobuf.Empty
+	10, // 32: metrics.MetricsService.SubscribeMetrics:output_type -> metrics.Metrics
+	31, // [31:33] is the sub-list for method output_type
+	29, // [29:31] is the sub-list for method input_type
 	29, // [29:29] is the sub-list for extension type_name
 	29, // [29:29] is the sub-list for extension extendee
 	0,  // [0:29] is the sub-list for field type_name

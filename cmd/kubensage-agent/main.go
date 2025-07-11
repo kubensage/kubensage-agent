@@ -123,43 +123,44 @@ func metricsLoop(
 		select {
 		case <-sigCh:
 			// Signal received: close the stream and exit
-			ack, err := stream.CloseAndRecv()
+			_, err := stream.CloseAndRecv()
 			if err != nil {
 				logger.Error("Failed to receive ack", zap.Error(err))
 			} else {
-				logger.Info("Relay server acknowledged", zap.String("relay_response", ack.Message))
+				logger.Info("Relay server acknowledged")
 			}
 			logger.Warn("Termination signal received, exiting")
 			return
 
 		case <-ctx.Done():
 			// Context cancelled externally: close the stream and exit
-			ack, err := stream.CloseAndRecv()
+			_, err := stream.CloseAndRecv()
 			if err != nil {
 				logger.Error("Failed to receive ack on context cancel", zap.Error(err))
 			} else {
-				logger.Info("Relay server acknowledged on cancel", zap.String("relay_response", ack.Message))
+				logger.Info("Relay server acknowledged on cancel")
 			}
 			logger.Info("Context cancelled, exiting")
 			return
 
 		case <-ticker.C:
-			// Triggered by ticker: collect and send metrics
+			// Triggered by ticker: collect and send collectedMetrics
 
-			metrics, errs := metrics.GetMetrics(ctx, runtimeClient, logger)
+			collectedMetrics, errs := metrics.GetMetrics(ctx, runtimeClient, logger)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {
 					errStrs = append(errStrs, e.Error())
 				}
-				logger.Error("Failed to get metrics", zap.Strings("errors", errStrs))
+				logger.Error("Failed to get collectedMetrics", zap.Strings("errors", errStrs))
 				continue
 			}
 
-			logger.Debug("Metrics", zap.Any("metrics", metrics))
+			logger.Info("Number of discovered pods", zap.Int("n_of_discovered_pods", len(collectedMetrics.PodMetrics)))
+			logger.Debug("Metrics", zap.Any("collectedMetrics", collectedMetrics))
 
-			// Attempt to send metrics; on failure, reconnect and retry once
-			if err := stream.Send(metrics); err != nil {
+			// Attempt to send collectedMetrics; on failure, reconnect and retry once
+			if err := stream.Send(collectedMetrics); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
 
 				_ = stream.CloseSend() // Ensure we explicitly close the failed stream
@@ -167,7 +168,7 @@ func metricsLoop(
 				stream = openStreamWithRetry(ctx, relayClient, logger)
 				logger.Info("Reconnected to stream successfully")
 
-				err2 := stream.Send(metrics)
+				err2 := stream.Send(collectedMetrics)
 				if err2 != nil {
 					logger.Error("Send after reconnect failed", zap.Error(err2))
 					continue
@@ -175,7 +176,7 @@ func metricsLoop(
 
 				logger.Info("Send after reconnect succeeded")
 			} else {
-				logger.Info("Metrics sent successfully", zap.Int("n_of_discovered_pods", len(metrics.PodMetrics)))
+				logger.Info("Metrics sent successfully")
 			}
 		}
 	}
