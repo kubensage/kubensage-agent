@@ -19,6 +19,8 @@ github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kubensage/go-common v0.0.1 h1:UErf6KQtFJF64ZM+mlN13BVbQgJdqwgtxzRTXD/tbwM=
 github.com/kubensage/go-common v0.0.1/go.mod h1:apqMthC1+JtIVr+PSv7mJhcwY24/9lt3A419oeYcemg=
+github.com/kubensage/go-common v1.0.5 h1:K8OME/e/yhH/QknjKupujFjLDvEKbx7qkuLm9tgQr7k=
+github.com/kubensage/go-common v1.0.5/go.mod h1:apqMthC1+JtIVr+PSv7mJhcwY24/9lt3A419oeYcemg=
 github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 h1:PpXWgLPs+Fqr325bN2FD2ISlRRztXibcX6e8f5FR5Dc=
 github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35/go.mod h1:autxFIvghDt3jPTLoqZ9OZ7s9qTGNAWmYCjVFWPX/zg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
