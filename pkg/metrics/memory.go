@@ -4,13 +4,13 @@ import (
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
+	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
 // SafeMemoryMetrics safely extracts memory metrics from a ContainerStats object.
 // If stats.Memory is nil, it returns an empty struct with zeroed values.
 // Optional fields are safely converted to int64 using a fallback of -1.
-func SafeMemoryMetrics(stats *runtimeapi.ContainerStats) *proto.MemoryMetrics {
+func getMemoryMetrics(stats *cri.ContainerStats) *proto.MemoryMetrics {
 	if stats.Memory == nil {
 		return &proto.MemoryMetrics{}
 	}

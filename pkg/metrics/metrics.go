@@ -1,9 +1,8 @@
-package discovery
+package metrics
 
 import (
 	"context"
 	"fmt"
-	m "github.com/kubensage/kubensage-agent/pkg/metrics"
 	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -11,7 +10,7 @@ import (
 	"time"
 )
 
-// GetAllMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
+// GetMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
 // The collection process is parallelized across four sources:
 // - Node metrics (CPU, memory, PSI, etc.)
 // - Pod sandboxes
@@ -20,7 +19,7 @@ import (
 //
 // The function returns a populated *Metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*proto.Metrics, []error) {
+func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*proto.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
@@ -29,7 +28,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
-	var nodeMetrics *proto.NodeMetrics
+	var nodeMetrics *proto.NodeMetrics // NodeMetrics
 
 	wg.Add(4)
 
@@ -37,7 +36,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 	go func() {
 		defer wg.Done()
 		var err error
-		nodeMetrics, err = m.SafeNodeMetrics(ctx, 1*time.Second, logger)
+		nodeMetrics, err = getNodeMetrics(ctx, 1*time.Second, logger)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
 		}
@@ -103,10 +102,10 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 			}
 
 			// Extract metrics from stats object (safe access wrappers)
-			cpuMetrics := m.SafeCpuMetrics(containerStats)
-			memoryMetrics := m.SafeMemoryMetrics(containerStats)
-			fileSystemMetrics := m.SafeFileSystemMetrics(containerStats)
-			swapMetrics := m.SafeSwapMetrics(containerStats)
+			cpuMetrics := getCpuMetrics(containerStats)
+			memoryMetrics := getMemoryMetrics(containerStats)
+			fileSystemMetrics := getFileSystemMetrics(containerStats)
+			swapMetrics := getSwapMetrics(containerStats)
 
 			// Build container metric object
 			containerMetrics := &proto.ContainerMetrics{
