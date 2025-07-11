@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	m "github.com/kubensage/kubensage-agent/pkg/metrics"
+	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"sync"
@@ -19,7 +20,7 @@ import (
 //
 // The function returns a populated *Metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*m.Metrics, []error) {
+func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*proto.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
@@ -28,7 +29,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
-	var nodeMetrics *m.NodeMetrics
+	var nodeMetrics *proto.NodeMetrics
 
 	wg.Add(4)
 
@@ -81,7 +82,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 		errs = append(errs, err)
 	}
 
-	var podsMetrics []*m.PodMetrics
+	var podsMetrics []*proto.PodMetrics
 
 	// Create a mapping from pod ID to its associated containers
 	containerMap := make(map[string][]*cri.Container)
@@ -91,7 +92,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 
 	// Build pod metrics from pod and container data
 	for _, pod := range pods {
-		var containersMetrics []*m.ContainerMetrics
+		var containersMetrics []*proto.ContainerMetrics
 		containers := containerMap[pod.Id]
 
 		for _, container := range containers {
@@ -108,7 +109,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 			swapMetrics := m.SafeSwapMetrics(containerStats)
 
 			// Build container metric object
-			containerMetrics := &m.ContainerMetrics{
+			containerMetrics := &proto.ContainerMetrics{
 				Id:                container.Id,
 				Name:              container.Metadata.Name,
 				Image:             container.Image.Image,
@@ -125,7 +126,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 		}
 
 		// Build pod-level metric from collected container metrics
-		podMetric := &m.PodMetrics{
+		podMetric := &proto.PodMetrics{
 			Id:               pod.Id,
 			Uid:              pod.Metadata.Uid,
 			Name:             pod.Metadata.Name,
@@ -140,7 +141,7 @@ func GetAllMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, 
 	}
 
 	// Final assembled metrics object
-	metrics := &m.Metrics{
+	metrics := &proto.Metrics{
 		NodeMetrics: nodeMetrics,
 		PodMetrics:  podsMetrics,
 	}
