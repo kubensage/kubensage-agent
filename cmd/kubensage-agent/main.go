@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
-	"github.com/kubensage/go-common/cli"
+	"flag"
+	commoncli "github.com/kubensage/go-common/cli"
 	"github.com/kubensage/go-common/log"
+	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/pkg/discovery"
 	"github.com/kubensage/kubensage-agent/pkg/metrics"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
@@ -13,26 +15,21 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 )
 
 func main() {
-	flags := cli.ParseFlags("kubensage-agent")
-	logger := log.SetupLogger(flags)
+	logCfgFn := commoncli.RegisterLogFlags(flag.CommandLine, "kubensage-agent")
+	agentCfgFn := agentcli.RegisterAgentFlags(flag.CommandLine)
 
-	exePath, err := os.Executable()
-	if err != nil {
-		logger.Warn("Could not determine executable path", zap.Error(err))
-		exePath = "unknown"
-	}
+	flag.Parse()
 
-	logger.Info("kubensage-agent started",
-		zap.String("go_version", runtime.Version()),
-		zap.String("executable", exePath),
-		zap.Time("start_time", time.Now()),
-	)
+	logCfg := logCfgFn()
+	logger := log.SetupLogger(logCfg)
+	agentCfg := agentCfgFn(logger)
+
+	log.LogStartupInfo(logger, logCfg, agentCfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Ensures all context-aware operations can exit cleanly
@@ -56,7 +53,7 @@ func main() {
 	}(criConn)
 
 	// Connect to relay and defer cleanup of connection
-	relayClient, relayConn := utils.SetupRelayConnection(flags.RelayAddress, logger)
+	relayClient, relayConn := utils.SetupRelayConnection(agentCfg.RelayAddress, logger)
 	defer func(relayConn *grpc.ClientConn) {
 		err := relayConn.Close()
 		if err != nil {
@@ -68,7 +65,7 @@ func main() {
 	stream := openStreamWithRetry(ctx, relayClient, logger)
 
 	// Start the core metric collection loop
-	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, flags.MainLoopDurationSeconds)
+	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, agentCfg.MainLoopDurationSeconds)
 }
 
 // openStreamWithRetry attempts to establish a streaming connection with the relay server using a retry loop.
