@@ -17,41 +17,6 @@ systems like Prometheus.
 
 ---
 
-## 📦 Project Structure
-
-```bash
-kubensage-agent/
-├── cmd/
-│   └── kubensage-agent/          # Main entrypoint
-│       └── main.go               # Agent loop, logging, lifecycle
-├── Makefile / go.mod / go.sum    # Build system & dependencies
-├── LICENSE                       # MIT License
-├── pkg/
-│   ├── converter                 # Custom converter logic for GRPC 
-│   │   ├── container.go
-│   │   ├── metrics.go
-│   │   └── ...
-│   ├── discovery/                # CRI socket detection and metrics gathering
-│   │   ├── container.go
-│   │   ├── cri_socket.go
-│   │   └── ...
-│   ├── metrics/                  # Data structures for telemetry
-│   │   ├── cpu.go
-│   │   ├── file_system.go
-│   │   └── ...
-│   └── utils/                    # Logging, helpers, gRPC connection
-│       ├── grpc.go
-│       ├── json.go
-│       └── ...
-├── proto                         # Proto definitions
-│       ├── gen                   # Generated proto files
-│       │     ├── metrics_grpc.pb.go
-│       │     └── metrics.pb.go
-│       └── metrics.proto
-```
-
----
-
 ## 📊 Metrics Overview
 
 The agent collects a wide variety of metrics structured into the following main objects:
