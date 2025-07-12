@@ -19,8 +19,10 @@ import (
 	"time"
 )
 
+const appName = "kubensage-agent"
+
 func main() {
-	logCfgFn := commoncli.RegisterLogFlags(flag.CommandLine, "kubensage-agent")
+	logCfgFn := commoncli.RegisterLogFlags(flag.CommandLine, appName)
 	agentCfgFn := agentcli.RegisterAgentFlags(flag.CommandLine)
 
 	flag.Parse()
@@ -29,7 +31,7 @@ func main() {
 	logger := log.SetupLogger(logCfg)
 	agentCfg := agentCfgFn(logger)
 
-	log.LogStartupInfo(logger, logCfg, agentCfg)
+	log.LogStartupInfo(logger, appName, logCfg, agentCfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Ensures all context-aware operations can exit cleanly

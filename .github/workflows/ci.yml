@@ -1,7 +1,7 @@
 name: Build, Tag and Release
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
