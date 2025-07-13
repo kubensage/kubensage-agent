@@ -49,7 +49,7 @@ message NodeMetrics {
   double cpu_usage_percent = 14;
 
   uint64 total_memory = 15;
-  uint64 free_memory = 16;
+  uint64 available_memory = 16;
   uint64 used_memory = 17;
   double memory_used_perc = 18;
 
@@ -92,12 +92,12 @@ message SwapMetrics {
 
 // --- Container (within Pod) ---
 message ContainerMetrics {
-  string id = 1;
-  string name = 2;
+  string id = 1;              // ID of the container.
+  string name = 2;            // Name of the container. Same as the container name in the PodSpec.
   string image = 3;
   int64 created_at = 4;
   string state = 5;
-  uint32 attempt = 6;
+  uint32 attempt = 6;         // Attempt number of creating the container.
 
   CpuMetrics cpu_metrics = 7;
   MemoryMetrics memory_metrics = 8;

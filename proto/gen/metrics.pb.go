@@ -247,7 +247,7 @@ type NodeMetrics struct {
 	CpuCores          int32                  `protobuf:"varint,13,opt,name=cpu_cores,json=cpuCores,proto3" json:"cpu_cores,omitempty"`
 	CpuUsagePercent   float64                `protobuf:"fixed64,14,opt,name=cpu_usage_percent,json=cpuUsagePercent,proto3" json:"cpu_usage_percent,omitempty"`
 	TotalMemory       uint64                 `protobuf:"varint,15,opt,name=total_memory,json=totalMemory,proto3" json:"total_memory,omitempty"`
-	FreeMemory        uint64                 `protobuf:"varint,16,opt,name=free_memory,json=freeMemory,proto3" json:"free_memory,omitempty"`
+	AvailableMemory   uint64                 `protobuf:"varint,16,opt,name=available_memory,json=availableMemory,proto3" json:"available_memory,omitempty"`
 	UsedMemory        uint64                 `protobuf:"varint,17,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
 	MemoryUsedPerc    float64                `protobuf:"fixed64,18,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
 	PsiCpuMetrics     *PsiMetrics            `protobuf:"bytes,19,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
@@ -393,9 +393,9 @@ func (x *NodeMetrics) GetTotalMemory() uint64 {
 	return 0
 }
 
-func (x *NodeMetrics) GetFreeMemory() uint64 {
+func (x *NodeMetrics) GetAvailableMemory() uint64 {
 	if x != nil {
-		return x.FreeMemory
+		return x.AvailableMemory
 	}
 	return 0
 }
@@ -726,12 +726,12 @@ func (x *SwapMetrics) GetUsageBytes() *wrapperspb.UInt64Value {
 // --- Container (within Pod) ---
 type ContainerMetrics struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // ID of the container.
+	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"` // Name of the container. Same as the container name in the PodSpec.
 	Image             string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
 	CreatedAt         int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	State             string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
-	Attempt           uint32                 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	Attempt           uint32                 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"` // Attempt number of creating the container.
 	CpuMetrics        *CpuMetrics            `protobuf:"bytes,7,opt,name=cpu_metrics,json=cpuMetrics,proto3" json:"cpu_metrics,omitempty"`
 	MemoryMetrics     *MemoryMetrics         `protobuf:"bytes,8,opt,name=memory_metrics,json=memoryMetrics,proto3" json:"memory_metrics,omitempty"`
 	FileSystemMetrics *FileSystemMetrics     `protobuf:"bytes,9,opt,name=file_system_metrics,json=fileSystemMetrics,proto3" json:"file_system_metrics,omitempty"`
@@ -1059,7 +1059,7 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\"\n" +
 	"\fhardwareAddr\x18\x04 \x01(\tR\fhardwareAddr\x12\x14\n" +
 	"\x05flags\x18\x05 \x03(\tR\x05flags\x12\x14\n" +
-	"\x05addrs\x18\x06 \x03(\tR\x05addrs\"\xcc\x06\n" +
+	"\x05addrs\x18\x06 \x03(\tR\x05addrs\"\xd6\x06\n" +
 	"\vNodeMetrics\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x16\n" +
 	"\x06uptime\x18\x02 \x01(\x04R\x06uptime\x12\x1b\n" +
@@ -1077,9 +1077,8 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\tcpu_model\x18\f \x01(\tR\bcpuModel\x12\x1b\n" +
 	"\tcpu_cores\x18\r \x01(\x05R\bcpuCores\x12*\n" +
 	"\x11cpu_usage_percent\x18\x0e \x01(\x01R\x0fcpuUsagePercent\x12!\n" +
-	"\ftotal_memory\x18\x0f \x01(\x04R\vtotalMemory\x12\x1f\n" +
-	"\vfree_memory\x18\x10 \x01(\x04R\n" +
-	"freeMemory\x12\x1f\n" +
+	"\ftotal_memory\x18\x0f \x01(\x04R\vtotalMemory\x12)\n" +
+	"\x10available_memory\x18\x10 \x01(\x04R\x0favailableMemory\x12\x1f\n" +
 	"\vused_memory\x18\x11 \x01(\x04R\n" +
 	"usedMemory\x12(\n" +
 	"\x10memory_used_perc\x18\x12 \x01(\x01R\x0ememoryUsedPerc\x12;\n" +

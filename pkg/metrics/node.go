@@ -76,10 +76,10 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 		CpuCores:        cpuInfo[0].Cores,
 		CpuUsagePercent: cpuPercent[0],
 
-		TotalMemory:    memInfo.Total,
-		FreeMemory:     memInfo.Free,
-		UsedMemory:     memInfo.Used,
-		MemoryUsedPerc: memInfo.UsedPercent,
+		TotalMemory:     memInfo.Total,
+		AvailableMemory: memInfo.Available,
+		UsedMemory:      memInfo.Used,
+		MemoryUsedPerc:  memInfo.UsedPercent,
 
 		PsiCpuMetrics:    getPsiMetrics("/proc/pressure/cpu", logger),
 		PsiMemoryMetrics: getPsiMetrics("/proc/pressure/memory", logger),
