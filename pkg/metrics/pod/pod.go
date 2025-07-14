@@ -1,4 +1,4 @@
-package metrics
+package pod
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// getPods retrieves a list of all pod sandboxes from the CRI runtime.
+// Pods retrieves a list of all pod sandboxes from the CRI runtime.
 // It sends a ListPodSandboxRequest with default filters and returns the response items.
 // If the request fails, it returns an error.
-func getPods(
+func Pods(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
 	getOnlyReady bool,

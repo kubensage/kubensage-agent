@@ -3,14 +3,17 @@ package metrics
 import (
 	"context"
 	"fmt"
-	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/pkg/metrics/container"
+	"gitlab.com/kubensage/kubensage-agent/pkg/metrics/node"
+	"gitlab.com/kubensage/kubensage-agent/pkg/metrics/pod"
+	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"sync"
 	"time"
 )
 
-// GetMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
+// Metrics collects both node-level and pod-level metrics from the container runtime API (CRI).
 // The collection process is parallelized across four sources:
 // - Node metrics (CPU, memory, PSI, etc.)
 // - Pod sandboxes
@@ -19,7 +22,7 @@ import (
 //
 // The function returns a populated *Metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*proto.Metrics, []error) {
+func Metrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*gen.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
@@ -28,7 +31,7 @@ func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, log
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
-	var nodeMetrics *proto.NodeMetrics // NodeMetrics
+	var nodeMetrics *gen.NodeMetrics // NodeMetrics
 
 	wg.Add(4)
 
@@ -36,19 +39,19 @@ func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, log
 	go func() {
 		defer wg.Done()
 		var err error
-		nodeMetrics, err = getNodeMetrics(ctx, 1*time.Second, logger)
+		nodeMetrics, err = node.Metrics(ctx, 1*time.Second, logger)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
 		}
 	}()
 
-	// List all pod sandboxes
+	// List all _pod sandboxes
 	go func() {
 		defer wg.Done()
 		var err error
-		pods, err = getPods(ctx, runtimeClient, true)
+		pods, err = pod.Pods(ctx, runtimeClient, true)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to list pod sandboxes: %v", err)
+			errChan <- fmt.Errorf("failed to list _pod sandboxes: %v", err)
 		}
 	}()
 
@@ -56,7 +59,7 @@ func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, log
 	go func() {
 		defer wg.Done()
 		var err error
-		containers, err = getContainers(ctx, runtimeClient)
+		containers, err = container.Containers(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list containers: %v", err)
 		}
@@ -66,7 +69,7 @@ func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, log
 	go func() {
 		defer wg.Done()
 		var err error
-		containersStats, err = getContainersStats(ctx, runtimeClient)
+		containersStats, err = container.ContainersStats(ctx, runtimeClient)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to list container stats: %v", err)
 		}
@@ -81,66 +84,36 @@ func GetMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, log
 		errs = append(errs, err)
 	}
 
-	var podsMetrics []*proto.PodMetrics
+	var podsMetrics []*gen.PodMetrics
 
-	// Create a mapping from pod ID to its associated containers
+	// Create a mapping from _pod ID to its associated containers
 	containerMap := make(map[string][]*cri.Container)
-	for _, container := range containers {
-		containerMap[container.PodSandboxId] = append(containerMap[container.PodSandboxId], container)
+	for _, _container := range containers {
+		containerMap[_container.PodSandboxId] = append(containerMap[_container.PodSandboxId], _container)
 	}
 
-	// Build pod metrics from pod and container data
-	for _, pod := range pods {
-		var containersMetrics []*proto.ContainerMetrics
-		containers := containerMap[pod.Id]
+	// Build _pod metrics from _pod and container data
+	for _, _pod := range pods {
+		var containersMetrics []*gen.ContainerMetrics
+		containers := containerMap[_pod.Id]
 
-		for _, container := range containers {
-			// Match stats for each container
-			containerStats, err := getContainerStatsByContainerId(containersStats, container.Id)
+		for _, _container := range containers {
+			metrics, err := container.Metrics(_container, containersStats)
+
 			if err != nil {
-				errs = append(errs, fmt.Errorf("failed to get container stats for container %s: %v", container.Id, err))
+				errs = append(errs, fmt.Errorf("failed to get _container stats for _container %s: %v", _container.Id, err))
+				continue
 			}
 
-			// Extract metrics from stats object (safe access wrappers)
-			cpuMetrics := getCpuMetrics(containerStats)
-			memoryMetrics := getMemoryMetrics(containerStats)
-			fileSystemMetrics := getFileSystemMetrics(containerStats)
-			swapMetrics := getSwapMetrics(containerStats)
-
-			// Build container metric object
-			containerMetrics := &proto.ContainerMetrics{
-				Id:                container.Id,
-				Name:              container.Metadata.Name,
-				Image:             container.Image.Image,
-				CreatedAt:         container.CreatedAt,
-				State:             container.State.String(),
-				Attempt:           container.Metadata.Attempt,
-				CpuMetrics:        cpuMetrics,
-				MemoryMetrics:     memoryMetrics,
-				FileSystemMetrics: fileSystemMetrics,
-				SwapMetrics:       swapMetrics,
-			}
-
-			containersMetrics = append(containersMetrics, containerMetrics)
+			containersMetrics = append(containersMetrics, metrics)
 		}
 
-		// Build pod-level metric from collected container metrics
-		podMetric := &proto.PodMetrics{
-			Id:               pod.Id,
-			Uid:              pod.Metadata.Uid,
-			Name:             pod.Metadata.Name,
-			Namespace:        pod.Metadata.Namespace,
-			CreatedAt:        pod.CreatedAt,
-			State:            pod.State.String(),
-			Attempt:          pod.Metadata.Attempt,
-			ContainerMetrics: containersMetrics,
-		}
-
+		podMetric, _ := pod.Metrics(_pod, containersMetrics)
 		podsMetrics = append(podsMetrics, podMetric)
 	}
 
 	// Final assembled metrics object
-	metrics := &proto.Metrics{
+	metrics := &gen.Metrics{
 		NodeMetrics: nodeMetrics,
 		PodMetrics:  podsMetrics,
 	}

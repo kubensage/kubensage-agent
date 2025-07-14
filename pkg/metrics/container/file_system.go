@@ -1,18 +1,18 @@
-package metrics
+package container
 
 import (
 	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
-	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// SafeFileSystemMetrics safely extracts file system metrics from a ContainerStats object.
+// fileSystemMetrics safely extracts file system metrics from a ContainerStats object.
 // If the WritableLayer or any subfield is missing, default values are used.
 // This function prevents panics when fields are nil and ensures consistency across data collection.
-func getFileSystemMetrics(stats *cri.ContainerStats) *proto.FileSystemMetrics {
+func fileSystemMetrics(stats *cri.ContainerStats) *gen.FileSystemMetrics {
 	if stats.WritableLayer == nil {
-		return &proto.FileSystemMetrics{}
+		return &gen.FileSystemMetrics{}
 	}
 
 	var usedBytes, inodesUsed *wrapperspb.UInt64Value
@@ -25,7 +25,7 @@ func getFileSystemMetrics(stats *cri.ContainerStats) *proto.FileSystemMetrics {
 		inodesUsed = utils.ConvertCRIUInt64(stats.WritableLayer.InodesUsed)
 	}
 
-	metrics := &proto.FileSystemMetrics{
+	metrics := &gen.FileSystemMetrics{
 		Timestamp:  stats.WritableLayer.Timestamp,
 		UsedBytes:  usedBytes,
 		InodesUsed: inodesUsed,

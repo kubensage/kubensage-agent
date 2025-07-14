@@ -9,7 +9,7 @@ import (
 	"gitlab.com/kubensage/kubensage-agent/pkg/discovery"
 	"gitlab.com/kubensage/kubensage-agent/pkg/metrics"
 	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
-	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -79,9 +79,9 @@ func main() {
 // This mechanism helps reduce pressure on the relay server during outages or instability.
 func openStreamWithRetry(
 	ctx context.Context,
-	client proto.MetricsServiceClient,
+	client gen.MetricsServiceClient,
 	logger *zap.Logger,
-) proto.MetricsService_SendMetricsClient {
+) gen.MetricsService_SendMetricsClient {
 
 	backoff := time.Second
 
@@ -119,8 +119,8 @@ func metricsLoop(
 	ctx context.Context,
 	logger *zap.Logger,
 	runtimeClient cri.RuntimeServiceClient,
-	relayClient proto.MetricsServiceClient,
-	stream proto.MetricsService_SendMetricsClient,
+	relayClient gen.MetricsServiceClient,
+	stream gen.MetricsService_SendMetricsClient,
 	sigCh <-chan os.Signal,
 	mainLoopDurationSeconds time.Duration,
 ) {
@@ -154,7 +154,7 @@ func metricsLoop(
 		case <-ticker.C:
 			// Triggered by ticker: collect and send collectedMetrics
 
-			collectedMetrics, errs := metrics.GetMetrics(ctx, runtimeClient, logger)
+			collectedMetrics, errs := metrics.Metrics(ctx, runtimeClient, logger)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {

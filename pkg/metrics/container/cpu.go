@@ -1,19 +1,19 @@
-package metrics
+package container
 
 import (
 	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
-	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// SafeCpuMetrics safely extracts CPU metrics from a ContainerStats object.
-// If the CPU field is nil, it returns an empty CpuMetrics struct.
+// cpuMetrics safely extracts CPU metrics from a ContainerStats object.
+// If the CPU field is nil, it returns an empty cpuMetrics struct.
 // For optional numeric values, it returns -1 if the field is missing.
 // This function ensures safe access to optional protobuf fields.
-func getCpuMetrics(stats *cri.ContainerStats) *proto.CpuMetrics {
+func cpuMetrics(stats *cri.ContainerStats) *gen.CpuMetrics {
 	if stats.Cpu == nil {
-		return &proto.CpuMetrics{}
+		return &gen.CpuMetrics{}
 	}
 
 	var usageCoreNanoSeconds, usageNanoCores *wrapperspb.UInt64Value
@@ -26,7 +26,7 @@ func getCpuMetrics(stats *cri.ContainerStats) *proto.CpuMetrics {
 		usageNanoCores = utils.ConvertCRIUInt64(stats.Cpu.UsageNanoCores)
 	}
 
-	metrics := &proto.CpuMetrics{
+	metrics := &gen.CpuMetrics{
 		Timestamp:            stats.Cpu.Timestamp,
 		UsageCoreNanoSeconds: usageCoreNanoSeconds,
 		UsageNanoCores:       usageNanoCores,

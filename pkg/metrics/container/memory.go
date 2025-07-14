@@ -1,18 +1,18 @@
-package metrics
+package container
 
 import (
 	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
-	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// SafeMemoryMetrics safely extracts memory metrics from a ContainerStats object.
+// memoryMetrics safely extracts memory metrics from a ContainerStats object.
 // If stats.Memory is nil, it returns an empty struct with zeroed values.
 // Optional fields are safely converted to int64 using a fallback of -1.
-func getMemoryMetrics(stats *cri.ContainerStats) *proto.MemoryMetrics {
+func memoryMetrics(stats *cri.ContainerStats) *gen.MemoryMetrics {
 	if stats.Memory == nil {
-		return &proto.MemoryMetrics{}
+		return &gen.MemoryMetrics{}
 	}
 
 	var workingSetBytes, availableBytes, usageBytes, rssBytes, pageFaults, majorPageFaults *wrapperspb.UInt64Value
@@ -41,7 +41,7 @@ func getMemoryMetrics(stats *cri.ContainerStats) *proto.MemoryMetrics {
 		majorPageFaults = utils.ConvertCRIUInt64(stats.Memory.MajorPageFaults)
 	}
 
-	metrics := &proto.MemoryMetrics{
+	metrics := &gen.MemoryMetrics{
 		Timestamp:       stats.Memory.Timestamp,
 		WorkingSetBytes: workingSetBytes,
 		AvailableBytes:  availableBytes,
