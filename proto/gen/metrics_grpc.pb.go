@@ -27,6 +27,8 @@ const (
 // MetricsServiceClient is the client API for MetricsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// --- Service Definition ---
 type MetricsServiceClient interface {
 	// In
 	SendMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[Metrics, emptypb.Empty], error)
@@ -77,6 +79,8 @@ type MetricsService_SubscribeMetricsClient = grpc.ServerStreamingClient[Metrics]
 // MetricsServiceServer is the server API for MetricsService service.
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility.
+//
+// --- Service Definition ---
 type MetricsServiceServer interface {
 	// In
 	SendMetrics(grpc.ClientStreamingServer[Metrics, emptypb.Empty]) error
