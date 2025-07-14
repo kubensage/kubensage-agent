@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
-	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"sync"

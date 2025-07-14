@@ -1,8 +1,8 @@
 package utils
 
 import (
-	proto "github.com/kubensage/kubensage-agent/proto/gen"
 	grpc2 "gitlab.com/kubensage/go-common/grpc"
+	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"

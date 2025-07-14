@@ -1,0 +1,236 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "/proto/gen";
+
+import "google/protobuf/wrappers.proto";
+
+// NodeMetrics aggregates system-level metrics and metadata for the node where the agent is running.
+// It includes hardware information, OS/kernel metadata, CPU and memory usage, PSI pressure stats,
+// and network interface details.
+message NodeMetrics {
+  // Hostname of the node (as reported by the OS).
+  string hostname = 1;
+
+  // Time since last boot (in seconds).
+  uint64 uptime = 2;
+
+  // System boot timestamp (in seconds since epoch).
+  uint64 boot_time = 3;
+
+  // Number of running processes on the system.
+  uint64 procs = 4;
+
+  // Name of the operating system (e.g., "linux").
+  string os = 5;
+
+  // Platform identifier (e.g., "ubuntu", "centos").
+  string platform = 6;
+
+  // Platform family (e.g., "debian", "rhel").
+  string platform_family = 7;
+
+  // Version of the platform (e.g., "20.04").
+  string platform_version = 8;
+
+  // Kernel version (e.g., "5.15.0-89-generic").
+  string kernel_version = 9;
+
+  // Kernel architecture (e.g., "x86_64").
+  string kernel_arch = 10;
+
+  // Unique identifier for the host (as reported by the system, usually from DMI or machine-id).
+  string host_id = 11;
+
+  // Aggregated CPU usage percentage across all logical CPUs over the last sampling interval.
+  double total_cpu_percentage = 12;
+
+  // Detailed metrics and metadata for each logical CPU on the node.
+  repeated CpuInfo cpu_infos = 13;
+
+  // Total system memory in bytes.
+  uint64 total_memory = 14;
+
+  // Available memory in bytes (free + buffers/cache).
+  uint64 available_memory = 15;
+
+  // Used memory in bytes (total - available).
+  uint64 used_memory = 16;
+
+  // Percentage of memory used (used / total * 100).
+  double memory_used_perc = 17;
+
+  // Aggregated network usage statistics across all network interfaces.
+  NetUsage net_usage = 18;
+
+  // Disk usage statistics for all mounted file systems on the node,
+  // including capacity, free/used space, and file system type.
+  repeated DiskUsage disk_usages = 19;
+
+  // Aggregated disk I/O statistics for the entire node.
+  DiskIOSummary disk_io_summary = 20;
+
+  // Pressure stall information for CPU-related resource contention.
+  PsiMetrics psi_cpu_metrics = 21;
+
+  // Pressure stall information for memory-related resource contention.
+  PsiMetrics psi_memory_metrics = 22;
+
+  // Pressure stall information for I/O-related resource contention.
+  PsiMetrics psi_io_metrics = 23;
+
+  // List of all network interfaces present on the node, including their metadata and IPs.
+  repeated InterfaceStat network_interfaces = 24;
+}
+
+// CpuInfo provides metadata and real-time usage for a single logical CPU (hardware thread).
+// Logical CPUs are grouped into cores and physical sockets (CPUs).
+message CpuInfo {
+  // Model name of the processor (e.g., "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz").
+  string model = 1;
+
+  // Number of physical cores reported for the CPU. May be duplicated across logical threads.
+  int32 cores = 2;
+
+  // Clock speed in MHz.
+  int32 mhz = 3;
+
+  // Vendor identifier (e.g., "GenuineIntel", "AuthenticAMD").
+  string vendor_id = 4;
+
+  // Identifier of the physical CPU socket.
+  string physical_id = 5;
+
+  // Identifier of the core within the physical socket.
+  string core_id = 6;
+
+  // Logical CPU/thread ID as reported by the OS.
+  int32 cpu = 7;
+
+  // Percentage of time this logical CPU was actively executing instructions over the sampling interval (e.g., 1s).
+  double usage = 8;
+}
+
+// NetUsage aggregates cumulative network statistics across all interfaces.
+// Useful for identifying total traffic, errors, and dropped packets on the node.
+message NetUsage {
+  // Total number of bytes sent.
+  uint64 total_bytes_sent = 1;
+
+  // Total number of bytes received.
+  uint64 total_bytes_received = 2;
+
+  // Total number of packets sent.
+  uint64 total_packets_sent = 3;
+
+  // Total number of packets received.
+  uint64 total_packets_received = 4;
+
+  // Total inbound packet errors.
+  uint64 total_err_in = 5;
+
+  // Total outbound packet errors.
+  uint64 total_err_out = 6;
+
+  // Total inbound packets dropped.
+  uint64 total_drop_in = 7;
+
+  // Total outbound packets dropped.
+  uint64 total_drop_out = 8;
+
+  // Total inbound FIFO buffer errors.
+  uint64 total_fifo_err_in = 9;
+
+  // Total outbound FIFO buffer errors.
+  uint64 total_fifo_err_out = 10;
+}
+
+// DiskUsage reports storage statistics for a specific mount point on the system.
+// It provides capacity, usage, and file system information.
+message DiskUsage {
+  string device = 1;
+
+  // Mount point of the file system (e.g., "/", "/data").
+  string mountpoint = 2;
+
+  // File system type (e.g., "ext4", "xfs").
+  string fstype = 3;
+
+  // Total capacity of the file system in bytes.
+  uint64 total = 4;
+
+  // Used space in bytes.
+  uint64 used = 5;
+
+  // Free space available to the user in bytes.
+  uint64 free = 6;
+
+  // Percentage of used space (used / total * 100).
+  double used_percent = 7;
+}
+
+// DiskIOSummary aggregates disk I/O statistics across all block devices on the node.
+// It provides cumulative read/write operations and bytes transferred since boot.
+message DiskIOSummary {
+  // Total bytes read from all disks.
+  uint64 total_read_bytes = 1;
+
+  // Total bytes written to all disks.
+  uint64 total_write_bytes = 2;
+
+  // Total read operations across all disks.
+  uint64 total_read_ops = 3;
+
+  // Total write operations across all disks.
+  uint64 total_write_ops = 4;
+}
+
+// InterfaceStat describes the state and configuration of a network interface on the node.
+message InterfaceStat {
+  // System-assigned index for the network interface.
+  int32 index = 1;
+
+  // Maximum Transmission Unit (MTU) in bytes.
+  int32 mtu = 2;
+
+  // Interface name (e.g., "eth0", "lo").
+  string name = 3;
+
+  // MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
+  string hardwareAddr = 4;
+
+  // List of operational flags set on the interface (e.g., "up", "broadcast", "loopback").
+  repeated string flags = 5;
+
+  // IP addresses assigned to the interface, including both IPv4 and IPv6.
+  repeated string addrs = 6;
+}
+
+// PsiData captures pressure stall information (PSI) for a specific resource type
+// such as CPU, memory, or I/O. It quantifies how often and how severely the system
+// experienced delays due to contention for that resource.
+message PsiData {
+  // Cumulative time (in microseconds) that tasks have been stalled due to resource pressure since system boot.
+  google.protobuf.UInt64Value total = 1;
+
+  // Rolling average of stall time over the last 10 seconds, expressed as a percentage (0.0–100.0).
+  google.protobuf.DoubleValue avg10 = 2;
+
+  // Rolling average of stall time over the last 60 seconds, expressed as a percentage (0.0–100.0).
+  google.protobuf.DoubleValue avg60 = 3;
+
+  // Rolling average of stall time over the last 300 seconds, expressed as a percentage (0.0–100.0).
+  google.protobuf.DoubleValue avg300 = 4;
+}
+
+// PsiMetrics reports pressure stall metrics for a resource in two distinct conditions:
+// - 'some': partial contention (some tasks stalled)
+// - 'full': total contention (all tasks stalled)
+message PsiMetrics {
+  // Represents partial pressure — periods when at least one task was stalled, but others may have progressed.
+  PsiData some = 1;
+
+  // Represents full pressure — periods when all non-idle tasks were stalled and no useful work could be done.
+  PsiData full = 2;
+}

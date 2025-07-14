@@ -1,8 +1,8 @@
 package metrics
 
 import (
-	"github.com/kubensage/kubensage-agent/pkg/utils"
-	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
+	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )

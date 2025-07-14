@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "/proto/gen";
+
+import "proto/container_metrics.proto";
+
+// PodMetrics encapsulates the runtime metrics for a PodSandbox and its containers.
+message PodMetrics {
+  // ID of the PodSandbox (as returned by CRI).
+  string id = 1;
+
+  // UID of the pod (matches metadata.uid in the Kubernetes API).
+  string uid = 2;
+
+  // Name of the pod (matches metadata.name).
+  string name = 3;
+
+  // Namespace of the pod (matches metadata.namespace).
+  string namespace = 4;
+
+  // PodSandbox creation timestamp in nanoseconds since epoch.
+  int64 created_at = 5;
+
+  // PodSandbox state (e.g., "SANDBOX_READY", "SANDBOX_NOTREADY").
+  string state = 6;
+
+  // Number of times the sandbox has been (re)created. Starts at 0.
+  uint32 attempt = 7;
+
+  // List of container metrics for each container running inside the pod.
+  repeated ContainerMetrics container_metrics = 8;
+}

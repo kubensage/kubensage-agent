@@ -1,4 +1,4 @@
-module github.com/kubensage/kubensage-agent
+module gitlab.com/kubensage/kubensage-agent
 
 go 1.24.4
 

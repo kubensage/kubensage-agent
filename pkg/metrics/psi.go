@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"bufio"
-	proto "github.com/kubensage/kubensage-agent/proto/gen"
+	proto "gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"os"

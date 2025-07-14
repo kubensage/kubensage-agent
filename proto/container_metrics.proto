@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "/proto/gen";
+
+import "google/protobuf/wrappers.proto";
+
+// ContainerMetrics represents all runtime metrics for a single container.
+message ContainerMetrics {
+  // Unique container ID (as provided by CRI).
+  string id = 1;
+
+  // Container name (as specified in the PodSpec).
+  string name = 2;
+
+  // Image identifier (e.g., imageID or image digest).
+  string image = 3;
+
+  // Timestamp of container creation in nanoseconds since epoch.
+  int64 created_at = 4;
+
+  // Container state (e.g., "CONTAINER_RUNNING", "CONTAINER_EXITED", etc.).
+  string state = 5;
+
+  // Number of times the container has been (re)created. Starts at 0.
+  uint32 attempt = 6;
+
+  // CPU usage metrics.
+  CpuMetrics cpu_metrics = 7;
+
+  // Memory usage metrics.
+  MemoryMetrics memory_metrics = 8;
+
+  // Filesystem usage metrics.
+  FileSystemMetrics file_system_metrics = 9;
+
+  // Swap usage metrics.
+  SwapMetrics swap_metrics = 10;
+}
+
+// CpuMetrics represents CPU usage statistics for a container at a specific point in time.
+message CpuMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
+  int64 timestamp = 1;
+
+  // Cumulative CPU usage across all cores, in nanocores, since the container was created.
+  google.protobuf.UInt64Value usage_nano_cores = 2;
+
+  // Cumulative CPU usage across all cores, in core-nanoseconds, since container creation.
+  // This represents the total active CPU time.
+  google.protobuf.UInt64Value usage_core_nano_seconds = 3;
+}
+
+// MemoryMetrics provides detailed memory usage statistics for a container.
+message MemoryMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
+  int64 timestamp = 1;
+
+  // Working set memory in bytes (memory actively used and not easily reclaimed).
+  google.protobuf.UInt64Value working_set_bytes = 2;
+
+  // Estimated memory available for use: memory limit - working set.
+  google.protobuf.UInt64Value available_bytes = 3;
+
+  // Total memory usage in bytes (including cached, buffered, and active pages).
+  google.protobuf.UInt64Value usage_bytes = 4;
+
+  // Resident Set Size: physical memory used (anonymous + swap cache + THP).
+  google.protobuf.UInt64Value rss_bytes = 5;
+
+  // Total number of minor page faults (no I/O).
+  google.protobuf.UInt64Value page_faults = 6;
+
+  // Total number of major page faults (I/O was needed to fulfill the request).
+  google.protobuf.UInt64Value major_page_faults = 7;
+}
+
+// FileSystemMetrics captures file system usage related to a container.
+message FileSystemMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
+  int64 timestamp = 1;
+
+  // Mount point path of the file system.
+  string mountpoint = 2;
+
+  // Total bytes used by the container image layer on this file system.
+  google.protobuf.UInt64Value used_bytes = 3;
+
+  // Number of inodes used by the container images.
+  google.protobuf.UInt64Value inodes_used = 4;
+}
+
+// SwapMetrics reports swap usage for a container.
+message SwapMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
+  int64 timestamp = 1;
+
+  // Available swap in bytes: swap limit - used.
+  google.protobuf.UInt64Value available_bytes = 2;
+
+  // Total swap usage in bytes.
+  google.protobuf.UInt64Value usage_bytes = 3;
+}
