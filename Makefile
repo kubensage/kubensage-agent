@@ -19,15 +19,15 @@ clean:
 tidy:
 	go mod tidy
 
-build-linux-amd64: build-proto tidy
+build-linux-amd64: clean build-proto tidy
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
-build-linux-arm64: tidy build-proto
+build-linux-arm64: clean build-proto tidy
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-arm64 cmd/kubensage-agent/main.go
 
-build: clean build-linux-amd64 build-linux-arm64
+build: build-linux-amd64 build-linux-arm64
 
 # Utils
 fresh-scp: build-linux-amd64
