@@ -29,4 +29,4 @@ build: clean build-linux-amd64 build-linux-arm64
 
 # Utils
 fresh-scp: build-linux-amd64
-	scp .go-builds/kubensage-agent-local-linux-amd64 roman@192.168.1.160:/home/roman/kubensage/agent
+	scp build/kubensage-agent-local-linux-amd64 roman@192.168.1.160:/home/roman/kubensage/agent

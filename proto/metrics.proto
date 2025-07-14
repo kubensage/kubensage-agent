@@ -7,30 +7,68 @@ option go_package = "/proto/gen";
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
-// --- PSI Metrics ---
+// PsiData represents pressure stall information for a given resource (e.g. CPU, memory, IO).
+// It captures how often and how long tasks have been stalled due to resource pressure.
 message PsiData {
+  // Total time (in microseconds) that tasks have been stalled since boot.
   google.protobuf.UInt64Value total = 1;
+
+  // Average percentage of time over the past 10 seconds that tasks were stalled.
+  // This value is between 0.0 and 100.0.
   google.protobuf.DoubleValue avg10 = 2;
+
+  // Average percentage of time over the past 60 seconds that tasks were stalled.
   google.protobuf.DoubleValue avg60 = 3;
+
+  // Average percentage of time over the past 300 seconds that tasks were stalled.
   google.protobuf.DoubleValue avg300 = 4;
 }
 
 message PsiMetrics {
+  // 'some' indicates the time when at least one task was stalled due to resource contention.
+  // This reflects partial pressure situations where progress is still being made by other tasks.
   PsiData some = 1;
+
+  // 'full' indicates the time when all non-idle tasks were stalled simultaneously.
+  // This reflects severe contention where no useful work could be performed.
   PsiData full = 2;
 }
 
-// --- Network Interfaces ---
+// InterfaceStat describes the configuration and status of a network interface on the node.
 message InterfaceStat {
+  // The system-assigned index of the network interface.
   int32 index = 1;
+
+  // The Maximum Transmission Unit (MTU) size in bytes.
   int32 mtu = 2;
+
+  // The name of the network interface (e.g., "eth0", "lo").
   string name = 3;
+
+  // The MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
   string hardwareAddr = 4;
+
+  // A list of operational flags associated with the interface (e.g., "up", "broadcast", "loopback").
   repeated string flags = 5;
+
+  // A list of IP addresses assigned to the interface (both IPv4 and IPv6).
   repeated string addrs = 6;
 }
 
-// --- Node Metrics ---
+// Each CpuInfo represents a single logical CPU (i.e., a thread).
+// Multiple logical CPUs may share the same core and physical CPU (socket).
+message CpuInfo {
+  string model = 1;
+  int32 cores = 2; // Number of cores on the physical CPU (repeated across entries)
+  int32 mhz = 3;
+  string vendor_id = 4;
+  string physical_id = 5; // Physical CPU/socket identifier
+  string core_id = 6;     // Core identifier within the socket
+  int32 cpu = 7;          // Logical CPU ID (thread), as seen by the OS
+  // Percentage usage of this logical CPU over the sampling interval (e.g., 1s).
+  double usage = 8;
+}
+
 message NodeMetrics {
   string hostname = 1;
   uint64 uptime = 2;
@@ -44,20 +82,23 @@ message NodeMetrics {
   string kernel_arch = 10;
   string host_id = 11;
 
-  string cpu_model = 12;
-  int32 cpu_cores = 13;
-  double cpu_usage_percent = 14;
+  double total_cpu_percentage = 12;
+  repeated CpuInfo cpu_infos = 13;
 
-  uint64 total_memory = 15;
-  uint64 available_memory = 16;
-  uint64 used_memory = 17;
-  double memory_used_perc = 18;
+  uint64 total_memory = 14;
+  uint64 available_memory = 15;
+  uint64 used_memory = 16;
+  double memory_used_perc = 17;
 
-  PsiMetrics psi_cpu_metrics = 19;
-  PsiMetrics psi_memory_metrics = 20;
-  PsiMetrics psi_io_metrics = 21;
+  // TODO Disk
 
-  repeated InterfaceStat network_interfaces = 22;
+  // TODO Net
+
+  PsiMetrics psi_cpu_metrics = 18;
+  PsiMetrics psi_memory_metrics = 19;
+  PsiMetrics psi_io_metrics = 20;
+
+  repeated InterfaceStat network_interfaces = 21;
 }
 
 // --- Container Metrics ---
@@ -125,10 +166,6 @@ message Metrics {
 }
 
 // --- Service Definition ---
-message Ack {
-  string message = 1;
-}
-
 service MetricsService {
   // In
   rpc SendMetrics(stream Metrics) returns (google.protobuf.Empty);

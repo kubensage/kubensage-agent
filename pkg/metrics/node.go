@@ -25,8 +25,15 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 		return nil, err
 	}
 
-	// Get CPU usage over 1 second interval (non-per-core)
-	cpuPercent, err := cpu.PercentWithContext(ctx, interval, false)
+	cpuPercents, err := cpu.PercentWithContext(ctx, interval, true) // <-- true = per-core
+	if err != nil {
+		return nil, err
+	}
+
+	totalCpuPercent, err := cpu.PercentWithContext(ctx, interval, false) // <-- true = per-core
+	if err != nil {
+		return nil, err
+	}
 
 	memInfo, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {
@@ -58,6 +65,20 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 		networkInterfaces = append(networkInterfaces, interfaceStat)
 	}
 
+	var cpuInfos []*proto.CpuInfo
+	for i, ci := range cpuInfo {
+		cpuInfos = append(cpuInfos, &proto.CpuInfo{
+			Model:      ci.ModelName,
+			Cores:      ci.Cores,
+			Mhz:        int32(ci.Mhz),
+			VendorId:   ci.VendorID,
+			PhysicalId: ci.PhysicalID,
+			CoreId:     ci.CoreID,
+			Cpu:        ci.CPU,
+			Usage:      cpuPercents[i],
+		})
+	}
+
 	nodeInfo := &proto.NodeMetrics{
 		Hostname: info.Hostname,
 		Uptime:   info.Uptime,
@@ -72,9 +93,8 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 		KernelArch:      info.KernelArch,
 		HostId:          info.HostID,
 
-		CpuModel:        cpuInfo[0].ModelName,
-		CpuCores:        cpuInfo[0].Cores,
-		CpuUsagePercent: cpuPercent[0],
+		TotalCpuPercentage: totalCpuPercent[0],
+		CpuInfos:           cpuInfos,
 
 		TotalMemory:     memInfo.Total,
 		AvailableMemory: memInfo.Available,
