@@ -19,7 +19,7 @@ clean:
 tidy:
 	go mod tidy
 
-build-linux-amd64: tidy build-proto
+build-linux-amd64: build-proto tidy
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
