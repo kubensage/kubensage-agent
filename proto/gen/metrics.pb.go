@@ -394,15 +394,20 @@ type NodeMetrics struct {
 	// Used memory in bytes (total - available).
 	UsedMemory uint64 `protobuf:"varint,16,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
 	// Percentage of memory used (used / total * 100).
-	MemoryUsedPerc float64 `protobuf:"fixed64,17,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
+	MemoryUsedPerc float64   `protobuf:"fixed64,17,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
+	NetUsage       *NetUsage `protobuf:"bytes,18,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
+	// Disk usage statistics for all mounted file systems on the node,
+	// including capacity, free/used space, and file system type.
+	DiskUsages    []*DiskUsage   `protobuf:"bytes,19,rep,name=disk_usages,json=diskUsages,proto3" json:"disk_usages,omitempty"`
+	DiskIoSummary *DiskIOSummary `protobuf:"bytes,20,opt,name=disk_io_summary,json=diskIoSummary,proto3" json:"disk_io_summary,omitempty"`
 	// Pressure stall information for CPU-related resource contention.
-	PsiCpuMetrics *PsiMetrics `protobuf:"bytes,18,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
+	PsiCpuMetrics *PsiMetrics `protobuf:"bytes,21,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
 	// Pressure stall information for memory-related resource contention.
-	PsiMemoryMetrics *PsiMetrics `protobuf:"bytes,19,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
+	PsiMemoryMetrics *PsiMetrics `protobuf:"bytes,22,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
 	// Pressure stall information for I/O-related resource contention.
-	PsiIoMetrics *PsiMetrics `protobuf:"bytes,20,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
+	PsiIoMetrics *PsiMetrics `protobuf:"bytes,23,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
 	// List of all network interfaces present on the node, including their metadata and IPs.
-	NetworkInterfaces []*InterfaceStat `protobuf:"bytes,21,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
+	NetworkInterfaces []*InterfaceStat `protobuf:"bytes,24,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -556,6 +561,27 @@ func (x *NodeMetrics) GetMemoryUsedPerc() float64 {
 	return 0
 }
 
+func (x *NodeMetrics) GetNetUsage() *NetUsage {
+	if x != nil {
+		return x.NetUsage
+	}
+	return nil
+}
+
+func (x *NodeMetrics) GetDiskUsages() []*DiskUsage {
+	if x != nil {
+		return x.DiskUsages
+	}
+	return nil
+}
+
+func (x *NodeMetrics) GetDiskIoSummary() *DiskIOSummary {
+	if x != nil {
+		return x.DiskIoSummary
+	}
+	return nil
+}
+
 func (x *NodeMetrics) GetPsiCpuMetrics() *PsiMetrics {
 	if x != nil {
 		return x.PsiCpuMetrics
@@ -584,6 +610,391 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 	return nil
 }
 
+type DiskIOSummary struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TotalReadBytes  uint64                 `protobuf:"varint,1,opt,name=total_read_bytes,json=totalReadBytes,proto3" json:"total_read_bytes,omitempty"`
+	TotalWriteBytes uint64                 `protobuf:"varint,2,opt,name=total_write_bytes,json=totalWriteBytes,proto3" json:"total_write_bytes,omitempty"`
+	TotalReadOps    uint64                 `protobuf:"varint,3,opt,name=total_read_ops,json=totalReadOps,proto3" json:"total_read_ops,omitempty"`
+	TotalWriteOps   uint64                 `protobuf:"varint,4,opt,name=total_write_ops,json=totalWriteOps,proto3" json:"total_write_ops,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DiskIOSummary) Reset() {
+	*x = DiskIOSummary{}
+	mi := &file_proto_metrics_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiskIOSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiskIOSummary) ProtoMessage() {}
+
+func (x *DiskIOSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiskIOSummary.ProtoReflect.Descriptor instead.
+func (*DiskIOSummary) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DiskIOSummary) GetTotalReadBytes() uint64 {
+	if x != nil {
+		return x.TotalReadBytes
+	}
+	return 0
+}
+
+func (x *DiskIOSummary) GetTotalWriteBytes() uint64 {
+	if x != nil {
+		return x.TotalWriteBytes
+	}
+	return 0
+}
+
+func (x *DiskIOSummary) GetTotalReadOps() uint64 {
+	if x != nil {
+		return x.TotalReadOps
+	}
+	return 0
+}
+
+func (x *DiskIOSummary) GetTotalWriteOps() uint64 {
+	if x != nil {
+		return x.TotalWriteOps
+	}
+	return 0
+}
+
+type NetUsage struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TotalBytesSent       uint64                 `protobuf:"varint,1,opt,name=total_bytes_sent,json=totalBytesSent,proto3" json:"total_bytes_sent,omitempty"`
+	TotalBytesReceived   uint64                 `protobuf:"varint,2,opt,name=total_bytes_received,json=totalBytesReceived,proto3" json:"total_bytes_received,omitempty"`
+	TotalPacketsSent     uint64                 `protobuf:"varint,3,opt,name=total_packets_sent,json=totalPacketsSent,proto3" json:"total_packets_sent,omitempty"`
+	TotalPacketsReceived uint64                 `protobuf:"varint,4,opt,name=total_packets_received,json=totalPacketsReceived,proto3" json:"total_packets_received,omitempty"`
+	TotalErrIn           uint64                 `protobuf:"varint,5,opt,name=total_err_in,json=totalErrIn,proto3" json:"total_err_in,omitempty"`
+	TotalErrOut          uint64                 `protobuf:"varint,6,opt,name=total_err_out,json=totalErrOut,proto3" json:"total_err_out,omitempty"`
+	TotalDropIn          uint64                 `protobuf:"varint,7,opt,name=total_drop_in,json=totalDropIn,proto3" json:"total_drop_in,omitempty"`
+	TotalDropOut         uint64                 `protobuf:"varint,8,opt,name=total_drop_out,json=totalDropOut,proto3" json:"total_drop_out,omitempty"`
+	TotalFifoErrIn       uint64                 `protobuf:"varint,9,opt,name=total_fifo_err_in,json=totalFifoErrIn,proto3" json:"total_fifo_err_in,omitempty"`
+	TotalFifoErrOut      uint64                 `protobuf:"varint,10,opt,name=total_fifo_err_out,json=totalFifoErrOut,proto3" json:"total_fifo_err_out,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *NetUsage) Reset() {
+	*x = NetUsage{}
+	mi := &file_proto_metrics_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetUsage) ProtoMessage() {}
+
+func (x *NetUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetUsage.ProtoReflect.Descriptor instead.
+func (*NetUsage) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *NetUsage) GetTotalBytesSent() uint64 {
+	if x != nil {
+		return x.TotalBytesSent
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalBytesReceived() uint64 {
+	if x != nil {
+		return x.TotalBytesReceived
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalPacketsSent() uint64 {
+	if x != nil {
+		return x.TotalPacketsSent
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalPacketsReceived() uint64 {
+	if x != nil {
+		return x.TotalPacketsReceived
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalErrIn() uint64 {
+	if x != nil {
+		return x.TotalErrIn
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalErrOut() uint64 {
+	if x != nil {
+		return x.TotalErrOut
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalDropIn() uint64 {
+	if x != nil {
+		return x.TotalDropIn
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalDropOut() uint64 {
+	if x != nil {
+		return x.TotalDropOut
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalFifoErrIn() uint64 {
+	if x != nil {
+		return x.TotalFifoErrIn
+	}
+	return 0
+}
+
+func (x *NetUsage) GetTotalFifoErrOut() uint64 {
+	if x != nil {
+		return x.TotalFifoErrOut
+	}
+	return 0
+}
+
+// DiskUsage reports storage statistics for a specific mount point on the system.
+// It provides capacity, usage, and file system information.
+type DiskUsage struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Device string                 `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
+	// Mount point of the file system (e.g., "/", "/data").
+	Mountpoint string `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
+	// File system type (e.g., "ext4", "xfs").
+	Fstype string `protobuf:"bytes,3,opt,name=fstype,proto3" json:"fstype,omitempty"`
+	// Total capacity of the file system in bytes.
+	Total uint64 `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
+	// Used space in bytes.
+	Used uint64 `protobuf:"varint,5,opt,name=used,proto3" json:"used,omitempty"`
+	// Free space available to the user in bytes.
+	Free uint64 `protobuf:"varint,6,opt,name=free,proto3" json:"free,omitempty"`
+	// Percentage of used space (used / total * 100).
+	UsedPercent   float64 `protobuf:"fixed64,7,opt,name=used_percent,json=usedPercent,proto3" json:"used_percent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiskUsage) Reset() {
+	*x = DiskUsage{}
+	mi := &file_proto_metrics_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiskUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiskUsage) ProtoMessage() {}
+
+func (x *DiskUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiskUsage.ProtoReflect.Descriptor instead.
+func (*DiskUsage) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DiskUsage) GetDevice() string {
+	if x != nil {
+		return x.Device
+	}
+	return ""
+}
+
+func (x *DiskUsage) GetMountpoint() string {
+	if x != nil {
+		return x.Mountpoint
+	}
+	return ""
+}
+
+func (x *DiskUsage) GetFstype() string {
+	if x != nil {
+		return x.Fstype
+	}
+	return ""
+}
+
+func (x *DiskUsage) GetTotal() uint64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *DiskUsage) GetUsed() uint64 {
+	if x != nil {
+		return x.Used
+	}
+	return 0
+}
+
+func (x *DiskUsage) GetFree() uint64 {
+	if x != nil {
+		return x.Free
+	}
+	return 0
+}
+
+func (x *DiskUsage) GetUsedPercent() float64 {
+	if x != nil {
+		return x.UsedPercent
+	}
+	return 0
+}
+
+// NetConnection represents a single network connection observed on the node.
+// Includes protocol, address info, status, and associated process/user details.
+type NetConnection struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Type of socket (e.g., SOCK_STREAM = 1, SOCK_DGRAM = 2).
+	Type uint32 `protobuf:"varint,1,opt,name=type,proto3" json:"type,omitempty"`
+	// Address family (e.g., AF_INET = 2 for IPv4, AF_INET6 = 10 for IPv6).
+	Family uint32 `protobuf:"varint,2,opt,name=family,proto3" json:"family,omitempty"`
+	// Local address in the form "IP:port" (e.g., "192.168.1.10:443").
+	Laddr string `protobuf:"bytes,3,opt,name=laddr,proto3" json:"laddr,omitempty"`
+	// Remote address in the form "IP:port" (e.g., "10.0.0.1:8080").
+	Raddr string `protobuf:"bytes,4,opt,name=raddr,proto3" json:"raddr,omitempty"`
+	// Connection state (e.g., "ESTABLISHED", "LISTEN", "TIME_WAIT").
+	Status string `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	// List of user IDs (UIDs) associated with the socket.
+	Uids []int32 `protobuf:"varint,6,rep,packed,name=uids,proto3" json:"uids,omitempty"`
+	// Process ID (PID) of the process owning the socket.
+	Pid           int32 `protobuf:"varint,7,opt,name=pid,proto3" json:"pid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NetConnection) Reset() {
+	*x = NetConnection{}
+	mi := &file_proto_metrics_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetConnection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetConnection) ProtoMessage() {}
+
+func (x *NetConnection) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metrics_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetConnection.ProtoReflect.Descriptor instead.
+func (*NetConnection) Descriptor() ([]byte, []int) {
+	return file_proto_metrics_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *NetConnection) GetType() uint32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
+}
+
+func (x *NetConnection) GetFamily() uint32 {
+	if x != nil {
+		return x.Family
+	}
+	return 0
+}
+
+func (x *NetConnection) GetLaddr() string {
+	if x != nil {
+		return x.Laddr
+	}
+	return ""
+}
+
+func (x *NetConnection) GetRaddr() string {
+	if x != nil {
+		return x.Raddr
+	}
+	return ""
+}
+
+func (x *NetConnection) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *NetConnection) GetUids() []int32 {
+	if x != nil {
+		return x.Uids
+	}
+	return nil
+}
+
+func (x *NetConnection) GetPid() int32 {
+	if x != nil {
+		return x.Pid
+	}
+	return 0
+}
+
 // CpuMetrics represents CPU usage statistics for a container at a specific point in time.
 type CpuMetrics struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -600,7 +1011,7 @@ type CpuMetrics struct {
 
 func (x *CpuMetrics) Reset() {
 	*x = CpuMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[5]
+	mi := &file_proto_metrics_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -612,7 +1023,7 @@ func (x *CpuMetrics) String() string {
 func (*CpuMetrics) ProtoMessage() {}
 
 func (x *CpuMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[5]
+	mi := &file_proto_metrics_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -625,7 +1036,7 @@ func (x *CpuMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CpuMetrics.ProtoReflect.Descriptor instead.
 func (*CpuMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{5}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CpuMetrics) GetTimestamp() int64 {
@@ -672,7 +1083,7 @@ type MemoryMetrics struct {
 
 func (x *MemoryMetrics) Reset() {
 	*x = MemoryMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[6]
+	mi := &file_proto_metrics_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -684,7 +1095,7 @@ func (x *MemoryMetrics) String() string {
 func (*MemoryMetrics) ProtoMessage() {}
 
 func (x *MemoryMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[6]
+	mi := &file_proto_metrics_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -697,7 +1108,7 @@ func (x *MemoryMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryMetrics.ProtoReflect.Descriptor instead.
 func (*MemoryMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{6}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MemoryMetrics) GetTimestamp() int64 {
@@ -766,7 +1177,7 @@ type FileSystemMetrics struct {
 
 func (x *FileSystemMetrics) Reset() {
 	*x = FileSystemMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[7]
+	mi := &file_proto_metrics_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -778,7 +1189,7 @@ func (x *FileSystemMetrics) String() string {
 func (*FileSystemMetrics) ProtoMessage() {}
 
 func (x *FileSystemMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[7]
+	mi := &file_proto_metrics_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -791,7 +1202,7 @@ func (x *FileSystemMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileSystemMetrics.ProtoReflect.Descriptor instead.
 func (*FileSystemMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{7}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *FileSystemMetrics) GetTimestamp() int64 {
@@ -837,7 +1248,7 @@ type SwapMetrics struct {
 
 func (x *SwapMetrics) Reset() {
 	*x = SwapMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[8]
+	mi := &file_proto_metrics_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -849,7 +1260,7 @@ func (x *SwapMetrics) String() string {
 func (*SwapMetrics) ProtoMessage() {}
 
 func (x *SwapMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[8]
+	mi := &file_proto_metrics_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -862,7 +1273,7 @@ func (x *SwapMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SwapMetrics.ProtoReflect.Descriptor instead.
 func (*SwapMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{8}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SwapMetrics) GetTimestamp() int64 {
@@ -915,7 +1326,7 @@ type ContainerMetrics struct {
 
 func (x *ContainerMetrics) Reset() {
 	*x = ContainerMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[9]
+	mi := &file_proto_metrics_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +1338,7 @@ func (x *ContainerMetrics) String() string {
 func (*ContainerMetrics) ProtoMessage() {}
 
 func (x *ContainerMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[9]
+	mi := &file_proto_metrics_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +1351,7 @@ func (x *ContainerMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerMetrics.ProtoReflect.Descriptor instead.
 func (*ContainerMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{9}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ContainerMetrics) GetId() string {
@@ -1038,7 +1449,7 @@ type PodMetrics struct {
 
 func (x *PodMetrics) Reset() {
 	*x = PodMetrics{}
-	mi := &file_proto_metrics_proto_msgTypes[10]
+	mi := &file_proto_metrics_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1050,7 +1461,7 @@ func (x *PodMetrics) String() string {
 func (*PodMetrics) ProtoMessage() {}
 
 func (x *PodMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[10]
+	mi := &file_proto_metrics_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1063,7 +1474,7 @@ func (x *PodMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodMetrics.ProtoReflect.Descriptor instead.
 func (*PodMetrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{10}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PodMetrics) GetId() string {
@@ -1137,7 +1548,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_proto_metrics_proto_msgTypes[11]
+	mi := &file_proto_metrics_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1149,7 +1560,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_metrics_proto_msgTypes[11]
+	mi := &file_proto_metrics_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1162,7 +1573,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_proto_metrics_proto_rawDescGZIP(), []int{11}
+	return file_proto_metrics_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Metrics) GetNodeMetrics() *NodeMetrics {
@@ -1209,7 +1620,7 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"physicalId\x12\x17\n" +
 	"\acore_id\x18\x06 \x01(\tR\x06coreId\x12\x10\n" +
 	"\x03cpu\x18\a \x01(\x05R\x03cpu\x12\x14\n" +
-	"\x05usage\x18\b \x01(\x01R\x05usage\"\xd1\x06\n" +
+	"\x05usage\x18\b \x01(\x01R\x05usage\"\xf6\a\n" +
 	"\vNodeMetrics\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x16\n" +
 	"\x06uptime\x18\x02 \x01(\x04R\x06uptime\x12\x1b\n" +
@@ -1230,11 +1641,51 @@ const file_proto_metrics_proto_rawDesc = "" +
 	"\x10available_memory\x18\x0f \x01(\x04R\x0favailableMemory\x12\x1f\n" +
 	"\vused_memory\x18\x10 \x01(\x04R\n" +
 	"usedMemory\x12(\n" +
-	"\x10memory_used_perc\x18\x11 \x01(\x01R\x0ememoryUsedPerc\x12;\n" +
-	"\x0fpsi_cpu_metrics\x18\x12 \x01(\v2\x13.metrics.PsiMetricsR\rpsiCpuMetrics\x12A\n" +
-	"\x12psi_memory_metrics\x18\x13 \x01(\v2\x13.metrics.PsiMetricsR\x10psiMemoryMetrics\x129\n" +
-	"\x0epsi_io_metrics\x18\x14 \x01(\v2\x13.metrics.PsiMetricsR\fpsiIoMetrics\x12E\n" +
-	"\x12network_interfaces\x18\x15 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\xc7\x01\n" +
+	"\x10memory_used_perc\x18\x11 \x01(\x01R\x0ememoryUsedPerc\x12.\n" +
+	"\tnet_usage\x18\x12 \x01(\v2\x11.metrics.NetUsageR\bnetUsage\x123\n" +
+	"\vdisk_usages\x18\x13 \x03(\v2\x12.metrics.DiskUsageR\n" +
+	"diskUsages\x12>\n" +
+	"\x0fdisk_io_summary\x18\x14 \x01(\v2\x16.metrics.DiskIOSummaryR\rdiskIoSummary\x12;\n" +
+	"\x0fpsi_cpu_metrics\x18\x15 \x01(\v2\x13.metrics.PsiMetricsR\rpsiCpuMetrics\x12A\n" +
+	"\x12psi_memory_metrics\x18\x16 \x01(\v2\x13.metrics.PsiMetricsR\x10psiMemoryMetrics\x129\n" +
+	"\x0epsi_io_metrics\x18\x17 \x01(\v2\x13.metrics.PsiMetricsR\fpsiIoMetrics\x12E\n" +
+	"\x12network_interfaces\x18\x18 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\xb3\x01\n" +
+	"\rDiskIOSummary\x12(\n" +
+	"\x10total_read_bytes\x18\x01 \x01(\x04R\x0etotalReadBytes\x12*\n" +
+	"\x11total_write_bytes\x18\x02 \x01(\x04R\x0ftotalWriteBytes\x12$\n" +
+	"\x0etotal_read_ops\x18\x03 \x01(\x04R\ftotalReadOps\x12&\n" +
+	"\x0ftotal_write_ops\x18\x04 \x01(\x04R\rtotalWriteOps\"\xb2\x03\n" +
+	"\bNetUsage\x12(\n" +
+	"\x10total_bytes_sent\x18\x01 \x01(\x04R\x0etotalBytesSent\x120\n" +
+	"\x14total_bytes_received\x18\x02 \x01(\x04R\x12totalBytesReceived\x12,\n" +
+	"\x12total_packets_sent\x18\x03 \x01(\x04R\x10totalPacketsSent\x124\n" +
+	"\x16total_packets_received\x18\x04 \x01(\x04R\x14totalPacketsReceived\x12 \n" +
+	"\ftotal_err_in\x18\x05 \x01(\x04R\n" +
+	"totalErrIn\x12\"\n" +
+	"\rtotal_err_out\x18\x06 \x01(\x04R\vtotalErrOut\x12\"\n" +
+	"\rtotal_drop_in\x18\a \x01(\x04R\vtotalDropIn\x12$\n" +
+	"\x0etotal_drop_out\x18\b \x01(\x04R\ftotalDropOut\x12)\n" +
+	"\x11total_fifo_err_in\x18\t \x01(\x04R\x0etotalFifoErrIn\x12+\n" +
+	"\x12total_fifo_err_out\x18\n" +
+	" \x01(\x04R\x0ftotalFifoErrOut\"\xbc\x01\n" +
+	"\tDiskUsage\x12\x16\n" +
+	"\x06device\x18\x01 \x01(\tR\x06device\x12\x1e\n" +
+	"\n" +
+	"mountpoint\x18\x02 \x01(\tR\n" +
+	"mountpoint\x12\x16\n" +
+	"\x06fstype\x18\x03 \x01(\tR\x06fstype\x12\x14\n" +
+	"\x05total\x18\x04 \x01(\x04R\x05total\x12\x12\n" +
+	"\x04used\x18\x05 \x01(\x04R\x04used\x12\x12\n" +
+	"\x04free\x18\x06 \x01(\x04R\x04free\x12!\n" +
+	"\fused_percent\x18\a \x01(\x01R\vusedPercent\"\xa5\x01\n" +
+	"\rNetConnection\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\rR\x04type\x12\x16\n" +
+	"\x06family\x18\x02 \x01(\rR\x06family\x12\x14\n" +
+	"\x05laddr\x18\x03 \x01(\tR\x05laddr\x12\x14\n" +
+	"\x05raddr\x18\x04 \x01(\tR\x05raddr\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\x12\x12\n" +
+	"\x04uids\x18\x06 \x03(\x05R\x04uids\x12\x10\n" +
+	"\x03pid\x18\a \x01(\x05R\x03pid\"\xc7\x01\n" +
 	"\n" +
 	"CpuMetrics\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12F\n" +
@@ -1310,64 +1761,71 @@ func file_proto_metrics_proto_rawDescGZIP() []byte {
 	return file_proto_metrics_proto_rawDescData
 }
 
-var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_proto_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_proto_metrics_proto_goTypes = []any{
 	(*PsiData)(nil),                // 0: metrics.PsiData
 	(*PsiMetrics)(nil),             // 1: metrics.PsiMetrics
 	(*InterfaceStat)(nil),          // 2: metrics.InterfaceStat
 	(*CpuInfo)(nil),                // 3: metrics.CpuInfo
 	(*NodeMetrics)(nil),            // 4: metrics.NodeMetrics
-	(*CpuMetrics)(nil),             // 5: metrics.CpuMetrics
-	(*MemoryMetrics)(nil),          // 6: metrics.MemoryMetrics
-	(*FileSystemMetrics)(nil),      // 7: metrics.FileSystemMetrics
-	(*SwapMetrics)(nil),            // 8: metrics.SwapMetrics
-	(*ContainerMetrics)(nil),       // 9: metrics.ContainerMetrics
-	(*PodMetrics)(nil),             // 10: metrics.PodMetrics
-	(*Metrics)(nil),                // 11: metrics.Metrics
-	(*wrapperspb.UInt64Value)(nil), // 12: google.protobuf.UInt64Value
-	(*wrapperspb.DoubleValue)(nil), // 13: google.protobuf.DoubleValue
-	(*emptypb.Empty)(nil),          // 14: google.protobuf.Empty
+	(*DiskIOSummary)(nil),          // 5: metrics.DiskIOSummary
+	(*NetUsage)(nil),               // 6: metrics.NetUsage
+	(*DiskUsage)(nil),              // 7: metrics.DiskUsage
+	(*NetConnection)(nil),          // 8: metrics.NetConnection
+	(*CpuMetrics)(nil),             // 9: metrics.CpuMetrics
+	(*MemoryMetrics)(nil),          // 10: metrics.MemoryMetrics
+	(*FileSystemMetrics)(nil),      // 11: metrics.FileSystemMetrics
+	(*SwapMetrics)(nil),            // 12: metrics.SwapMetrics
+	(*ContainerMetrics)(nil),       // 13: metrics.ContainerMetrics
+	(*PodMetrics)(nil),             // 14: metrics.PodMetrics
+	(*Metrics)(nil),                // 15: metrics.Metrics
+	(*wrapperspb.UInt64Value)(nil), // 16: google.protobuf.UInt64Value
+	(*wrapperspb.DoubleValue)(nil), // 17: google.protobuf.DoubleValue
+	(*emptypb.Empty)(nil),          // 18: google.protobuf.Empty
 }
 var file_proto_metrics_proto_depIdxs = []int32{
-	12, // 0: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
-	13, // 1: metrics.PsiData.avg10:type_name -> google.protobuf.DoubleValue
-	13, // 2: metrics.PsiData.avg60:type_name -> google.protobuf.DoubleValue
-	13, // 3: metrics.PsiData.avg300:type_name -> google.protobuf.DoubleValue
+	16, // 0: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
+	17, // 1: metrics.PsiData.avg10:type_name -> google.protobuf.DoubleValue
+	17, // 2: metrics.PsiData.avg60:type_name -> google.protobuf.DoubleValue
+	17, // 3: metrics.PsiData.avg300:type_name -> google.protobuf.DoubleValue
 	0,  // 4: metrics.PsiMetrics.some:type_name -> metrics.PsiData
 	0,  // 5: metrics.PsiMetrics.full:type_name -> metrics.PsiData
 	3,  // 6: metrics.NodeMetrics.cpu_infos:type_name -> metrics.CpuInfo
-	1,  // 7: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
-	1,  // 8: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
-	1,  // 9: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
-	2,  // 10: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
-	12, // 11: metrics.CpuMetrics.usage_nano_cores:type_name -> google.protobuf.UInt64Value
-	12, // 12: metrics.CpuMetrics.usage_core_nano_seconds:type_name -> google.protobuf.UInt64Value
-	12, // 13: metrics.MemoryMetrics.working_set_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 14: metrics.MemoryMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 15: metrics.MemoryMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 16: metrics.MemoryMetrics.rss_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 17: metrics.MemoryMetrics.page_faults:type_name -> google.protobuf.UInt64Value
-	12, // 18: metrics.MemoryMetrics.major_page_faults:type_name -> google.protobuf.UInt64Value
-	12, // 19: metrics.FileSystemMetrics.used_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 20: metrics.FileSystemMetrics.inodes_used:type_name -> google.protobuf.UInt64Value
-	12, // 21: metrics.SwapMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
-	12, // 22: metrics.SwapMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
-	5,  // 23: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
-	6,  // 24: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
-	7,  // 25: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
-	8,  // 26: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
-	9,  // 27: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
-	4,  // 28: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
-	10, // 29: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
-	11, // 30: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
-	14, // 31: metrics.MetricsService.SubscribeMetrics:input_type -> google.protobuf.Empty
-	14, // 32: metrics.MetricsService.SendMetrics:output_type -> google.protobuf.Empty
-	11, // 33: metrics.MetricsService.SubscribeMetrics:output_type -> metrics.Metrics
-	32, // [32:34] is the sub-list for method output_type
-	30, // [30:32] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	6,  // 7: metrics.NodeMetrics.net_usage:type_name -> metrics.NetUsage
+	7,  // 8: metrics.NodeMetrics.disk_usages:type_name -> metrics.DiskUsage
+	5,  // 9: metrics.NodeMetrics.disk_io_summary:type_name -> metrics.DiskIOSummary
+	1,  // 10: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
+	1,  // 11: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
+	1,  // 12: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
+	2,  // 13: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
+	16, // 14: metrics.CpuMetrics.usage_nano_cores:type_name -> google.protobuf.UInt64Value
+	16, // 15: metrics.CpuMetrics.usage_core_nano_seconds:type_name -> google.protobuf.UInt64Value
+	16, // 16: metrics.MemoryMetrics.working_set_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 17: metrics.MemoryMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 18: metrics.MemoryMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 19: metrics.MemoryMetrics.rss_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 20: metrics.MemoryMetrics.page_faults:type_name -> google.protobuf.UInt64Value
+	16, // 21: metrics.MemoryMetrics.major_page_faults:type_name -> google.protobuf.UInt64Value
+	16, // 22: metrics.FileSystemMetrics.used_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 23: metrics.FileSystemMetrics.inodes_used:type_name -> google.protobuf.UInt64Value
+	16, // 24: metrics.SwapMetrics.available_bytes:type_name -> google.protobuf.UInt64Value
+	16, // 25: metrics.SwapMetrics.usage_bytes:type_name -> google.protobuf.UInt64Value
+	9,  // 26: metrics.ContainerMetrics.cpu_metrics:type_name -> metrics.CpuMetrics
+	10, // 27: metrics.ContainerMetrics.memory_metrics:type_name -> metrics.MemoryMetrics
+	11, // 28: metrics.ContainerMetrics.file_system_metrics:type_name -> metrics.FileSystemMetrics
+	12, // 29: metrics.ContainerMetrics.swap_metrics:type_name -> metrics.SwapMetrics
+	13, // 30: metrics.PodMetrics.container_metrics:type_name -> metrics.ContainerMetrics
+	4,  // 31: metrics.Metrics.node_metrics:type_name -> metrics.NodeMetrics
+	14, // 32: metrics.Metrics.pod_metrics:type_name -> metrics.PodMetrics
+	15, // 33: metrics.MetricsService.SendMetrics:input_type -> metrics.Metrics
+	18, // 34: metrics.MetricsService.SubscribeMetrics:input_type -> google.protobuf.Empty
+	18, // 35: metrics.MetricsService.SendMetrics:output_type -> google.protobuf.Empty
+	15, // 36: metrics.MetricsService.SubscribeMetrics:output_type -> metrics.Metrics
+	35, // [35:37] is the sub-list for method output_type
+	33, // [33:35] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_proto_metrics_proto_init() }
@@ -1381,7 +1839,7 @@ func file_proto_metrics_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_metrics_proto_rawDesc), len(file_proto_metrics_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -31,4 +31,4 @@ build: clean build-linux-amd64 build-linux-arm64
 
 # Utils
 fresh-scp: build-linux-amd64
-	scp build/kubensage-agent-$(VERSION)-linux-amd64 $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_PATH)
+	scp $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_PATH)

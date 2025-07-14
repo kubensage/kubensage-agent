@@ -139,22 +139,128 @@ message NodeMetrics {
   // Percentage of memory used (used / total * 100).
   double memory_used_perc = 17;
 
-  // TODO Disk
+  // Aggregated network usage statistics across all network interfaces.
+  NetUsage net_usage = 18;
 
-  // TODO Net
+  // Disk usage statistics for all mounted file systems on the node,
+  // including capacity, free/used space, and file system type.
+  repeated DiskUsage disk_usages = 19;
+
+  // Aggregated disk I/O statistics for the entire node.
+  DiskIOSummary disk_io_summary = 20;
 
   // Pressure stall information for CPU-related resource contention.
-  PsiMetrics psi_cpu_metrics = 18;
+  PsiMetrics psi_cpu_metrics = 21;
 
   // Pressure stall information for memory-related resource contention.
-  PsiMetrics psi_memory_metrics = 19;
+  PsiMetrics psi_memory_metrics = 22;
 
   // Pressure stall information for I/O-related resource contention.
-  PsiMetrics psi_io_metrics = 20;
+  PsiMetrics psi_io_metrics = 23;
 
   // List of all network interfaces present on the node, including their metadata and IPs.
-  repeated InterfaceStat network_interfaces = 21;
+  repeated InterfaceStat network_interfaces = 24;
 }
+
+// DiskIOSummary aggregates disk I/O statistics across all block devices on the node.
+// It provides cumulative read/write operations and bytes transferred since boot.
+message DiskIOSummary {
+  // Total bytes read from all disks.
+  uint64 total_read_bytes = 1;
+
+  // Total bytes written to all disks.
+  uint64 total_write_bytes = 2;
+
+  // Total read operations across all disks.
+  uint64 total_read_ops = 3;
+
+  // Total write operations across all disks.
+  uint64 total_write_ops = 4;
+}
+
+// NetUsage aggregates cumulative network statistics across all interfaces.
+// Useful for identifying total traffic, errors, and dropped packets on the node.
+message NetUsage {
+  // Total number of bytes sent.
+  uint64 total_bytes_sent = 1;
+
+  // Total number of bytes received.
+  uint64 total_bytes_received = 2;
+
+  // Total number of packets sent.
+  uint64 total_packets_sent = 3;
+
+  // Total number of packets received.
+  uint64 total_packets_received = 4;
+
+  // Total inbound packet errors.
+  uint64 total_err_in = 5;
+
+  // Total outbound packet errors.
+  uint64 total_err_out = 6;
+
+  // Total inbound packets dropped.
+  uint64 total_drop_in = 7;
+
+  // Total outbound packets dropped.
+  uint64 total_drop_out = 8;
+
+  // Total inbound FIFO buffer errors.
+  uint64 total_fifo_err_in = 9;
+
+  // Total outbound FIFO buffer errors.
+  uint64 total_fifo_err_out = 10;
+}
+
+// DiskUsage reports storage statistics for a specific mount point on the system.
+// It provides capacity, usage, and file system information.
+message DiskUsage {
+  string device = 1;
+
+  // Mount point of the file system (e.g., "/", "/data").
+  string mountpoint = 2;
+
+  // File system type (e.g., "ext4", "xfs").
+  string fstype = 3;
+
+  // Total capacity of the file system in bytes.
+  uint64 total = 4;
+
+  // Used space in bytes.
+  uint64 used = 5;
+
+  // Free space available to the user in bytes.
+  uint64 free = 6;
+
+  // Percentage of used space (used / total * 100).
+  double used_percent = 7;
+}
+
+// NetConnection represents a single network connection observed on the node.
+// Includes protocol, address info, status, and associated process/user details.
+message NetConnection {
+  // Type of socket (e.g., SOCK_STREAM = 1, SOCK_DGRAM = 2).
+  uint32 type = 1;
+
+  // Address family (e.g., AF_INET = 2 for IPv4, AF_INET6 = 10 for IPv6).
+  uint32 family = 2;
+
+  // Local address in the form "IP:port" (e.g., "192.168.1.10:443").
+  string laddr = 3;
+
+  // Remote address in the form "IP:port" (e.g., "10.0.0.1:8080").
+  string raddr = 4;
+
+  // Connection state (e.g., "ESTABLISHED", "LISTEN", "TIME_WAIT").
+  string status = 5;
+
+  // List of user IDs (UIDs) associated with the socket.
+  repeated int32 uids = 6;
+
+  // Process ID (PID) of the process owning the socket.
+  int32 pid = 7;
+}
+
 
 // CpuMetrics represents CPU usage statistics for a container at a specific point in time.
 message CpuMetrics {
