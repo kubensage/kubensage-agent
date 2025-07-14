@@ -22,13 +22,13 @@ import (
 const appName = "kubensage-agent"
 
 func main() {
-	logCfgFn := commoncli.RegisterLogFlags(flag.CommandLine, appName)
+	logCfgFn := commoncli.RegisterLogStdAndFileFlags(flag.CommandLine, appName)
 	agentCfgFn := agentcli.RegisterAgentFlags(flag.CommandLine)
 
 	flag.Parse()
 
 	logCfg := logCfgFn()
-	logger := log.SetupLogger(logCfg)
+	logger := log.SetupStdAndFileLogger(logCfg)
 	agentCfg := agentCfgFn(logger)
 
 	log.LogStartupInfo(logger, appName, logCfg, agentCfg)

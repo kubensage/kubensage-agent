@@ -2,11 +2,11 @@ module gitlab.com/kubensage/kubensage-agent
 
 go 1.24.4
 
-// replace gitlab.com/kubensage/go-common => /home/roman/gitlab/go-common
+// replace gitlab.com/kubensage/go-common => /home/roman/gitlab/kubensage/go-common
 
 require (
 	github.com/shirou/gopsutil/v3 v3.24.5
-	gitlab.com/kubensage/go-common v0.0.3
+	gitlab.com/kubensage/go-common v0.0.4
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
