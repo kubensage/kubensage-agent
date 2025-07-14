@@ -103,9 +103,6 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 		NetworkInterfaces: networkInterfaces,
 	}
 
-	// TODO REMOVE
-	logger.Info("nodeInfo", zap.Any("nodeInfo", nodeInfo))
-
 	return nodeInfo, nil
 }
 
