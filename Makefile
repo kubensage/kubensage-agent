@@ -1,8 +1,10 @@
+-include config.mk
+
 OUTPUT_DIR = build
 VERSION ?= local
 
 .PHONY: build-proto \
-		clean  build build-linux-amd64 build-linux-arm64 \
+		clean tidy build build-linux-amd64 build-linux-arm64 \
 		fresh-scp
 
 # Proto
@@ -29,4 +31,4 @@ build: clean build-linux-amd64 build-linux-arm64
 
 # Utils
 fresh-scp: build-linux-amd64
-	scp build/kubensage-agent-local-linux-amd64 roman@192.168.1.160:/home/roman/kubensage/agent
+	scp build/kubensage-agent-$(VERSION)-linux-amd64 $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_PATH)
