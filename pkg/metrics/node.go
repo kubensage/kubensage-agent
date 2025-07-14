@@ -64,7 +64,6 @@ func getNodeMetrics(ctx context.Context, interval time.Duration, logger *zap.Log
 
 	cpuInfos := getCpuInfos(cpuInfo, cpuPercents)
 	netUsage := getNetUsage(netInfoIO[0])
-	logger.Info("Net len", zap.Int("len", len(netInfoIO)))
 	diskUsages := getDiskUsages(partitions)
 	diskIoSummary := getDiskIOSummary(counters)
 	networkInterfaces := getNetworkInterfaces(interfaces)
