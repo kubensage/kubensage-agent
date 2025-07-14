@@ -28,11 +28,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// --- Service Definition ---
+// MetricsService defines the bi-directional gRPC interface used to send and receive metrics
+// between the agent and the relay or between the relay and external consumers.
 type MetricsServiceClient interface {
-	// In
+	// Receives a continuous stream of Metrics messages from agents.
+	// The agent opens a stream and sends data periodically (e.g., every 5s).
 	SendMetrics(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[Metrics, emptypb.Empty], error)
-	// Out
+	// Allows a client (e.g., exporter or dashboard) to subscribe to a live stream of metrics.
+	// The relay pushes each incoming Metrics message to all subscribers.
 	SubscribeMetrics(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Metrics], error)
 }
 
@@ -80,11 +83,14 @@ type MetricsService_SubscribeMetricsClient = grpc.ServerStreamingClient[Metrics]
 // All implementations must embed UnimplementedMetricsServiceServer
 // for forward compatibility.
 //
-// --- Service Definition ---
+// MetricsService defines the bi-directional gRPC interface used to send and receive metrics
+// between the agent and the relay or between the relay and external consumers.
 type MetricsServiceServer interface {
-	// In
+	// Receives a continuous stream of Metrics messages from agents.
+	// The agent opens a stream and sends data periodically (e.g., every 5s).
 	SendMetrics(grpc.ClientStreamingServer[Metrics, emptypb.Empty]) error
-	// Out
+	// Allows a client (e.g., exporter or dashboard) to subscribe to a live stream of metrics.
+	// The relay pushes each incoming Metrics message to all subscribers.
 	SubscribeMetrics(*emptypb.Empty, grpc.ServerStreamingServer[Metrics]) error
 	mustEmbedUnimplementedMetricsServiceServer()
 }

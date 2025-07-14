@@ -7,169 +7,300 @@ option go_package = "/proto/gen";
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
-// PsiData represents pressure stall information for a given resource (e.g. CPU, memory, IO).
-// It captures how often and how long tasks have been stalled due to resource pressure.
+// PsiData captures pressure stall information (PSI) for a specific resource type
+// such as CPU, memory, or I/O. It quantifies how often and how severely the system
+// experienced delays due to contention for that resource.
 message PsiData {
-  // Total time (in microseconds) that tasks have been stalled since boot.
+  // Cumulative time (in microseconds) that tasks have been stalled due to resource pressure since system boot.
   google.protobuf.UInt64Value total = 1;
 
-  // Average percentage of time over the past 10 seconds that tasks were stalled.
-  // This value is between 0.0 and 100.0.
+  // Rolling average of stall time over the last 10 seconds, expressed as a percentage (0.0–100.0).
   google.protobuf.DoubleValue avg10 = 2;
 
-  // Average percentage of time over the past 60 seconds that tasks were stalled.
+  // Rolling average of stall time over the last 60 seconds, expressed as a percentage (0.0–100.0).
   google.protobuf.DoubleValue avg60 = 3;
 
-  // Average percentage of time over the past 300 seconds that tasks were stalled.
+  // Rolling average of stall time over the last 300 seconds, expressed as a percentage (0.0–100.0).
   google.protobuf.DoubleValue avg300 = 4;
 }
 
+// PsiMetrics reports pressure stall metrics for a resource in two distinct conditions:
+// - 'some': partial contention (some tasks stalled)
+// - 'full': total contention (all tasks stalled)
 message PsiMetrics {
-  // 'some' indicates the time when at least one task was stalled due to resource contention.
-  // This reflects partial pressure situations where progress is still being made by other tasks.
+  // Represents partial pressure — periods when at least one task was stalled, but others may have progressed.
   PsiData some = 1;
 
-  // 'full' indicates the time when all non-idle tasks were stalled simultaneously.
-  // This reflects severe contention where no useful work could be performed.
+  // Represents full pressure — periods when all non-idle tasks were stalled and no useful work could be done.
   PsiData full = 2;
 }
 
-// InterfaceStat describes the configuration and status of a network interface on the node.
+// InterfaceStat describes the state and configuration of a network interface on the node.
 message InterfaceStat {
-  // The system-assigned index of the network interface.
+  // System-assigned index for the network interface.
   int32 index = 1;
 
-  // The Maximum Transmission Unit (MTU) size in bytes.
+  // Maximum Transmission Unit (MTU) in bytes.
   int32 mtu = 2;
 
-  // The name of the network interface (e.g., "eth0", "lo").
+  // Interface name (e.g., "eth0", "lo").
   string name = 3;
 
-  // The MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
+  // MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
   string hardwareAddr = 4;
 
-  // A list of operational flags associated with the interface (e.g., "up", "broadcast", "loopback").
+  // List of operational flags set on the interface (e.g., "up", "broadcast", "loopback").
   repeated string flags = 5;
 
-  // A list of IP addresses assigned to the interface (both IPv4 and IPv6).
+  // IP addresses assigned to the interface, including both IPv4 and IPv6.
   repeated string addrs = 6;
 }
 
-// Each CpuInfo represents a single logical CPU (i.e., a thread).
-// Multiple logical CPUs may share the same core and physical CPU (socket).
+// CpuInfo provides metadata and real-time usage for a single logical CPU (hardware thread).
+// Logical CPUs are grouped into cores and physical sockets (CPUs).
 message CpuInfo {
+  // Model name of the processor (e.g., "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz").
   string model = 1;
-  int32 cores = 2; // Number of cores on the physical CPU (repeated across entries)
+
+  // Number of physical cores reported for the CPU. May be duplicated across logical threads.
+  int32 cores = 2;
+
+  // Clock speed in MHz.
   int32 mhz = 3;
+
+  // Vendor identifier (e.g., "GenuineIntel", "AuthenticAMD").
   string vendor_id = 4;
-  string physical_id = 5; // Physical CPU/socket identifier
-  string core_id = 6;     // Core identifier within the socket
-  int32 cpu = 7;          // Logical CPU ID (thread), as seen by the OS
-  // Percentage usage of this logical CPU over the sampling interval (e.g., 1s).
+
+  // Identifier of the physical CPU socket.
+  string physical_id = 5;
+
+  // Identifier of the core within the physical socket.
+  string core_id = 6;
+
+  // Logical CPU/thread ID as reported by the OS.
+  int32 cpu = 7;
+
+  // Percentage of time this logical CPU was actively executing instructions over the sampling interval (e.g., 1s).
   double usage = 8;
 }
 
+// NodeMetrics aggregates system-level metrics and metadata for the node where the agent is running.
+// It includes hardware information, OS/kernel metadata, CPU and memory usage, PSI pressure stats,
+// and network interface details.
 message NodeMetrics {
+  // Hostname of the node (as reported by the OS).
   string hostname = 1;
+
+  // Time since last boot (in seconds).
   uint64 uptime = 2;
+
+  // System boot timestamp (in seconds since epoch).
   uint64 boot_time = 3;
+
+  // Number of running processes on the system.
   uint64 procs = 4;
+
+  // Name of the operating system (e.g., "linux").
   string os = 5;
+
+  // Platform identifier (e.g., "ubuntu", "centos").
   string platform = 6;
+
+  // Platform family (e.g., "debian", "rhel").
   string platform_family = 7;
+
+  // Version of the platform (e.g., "20.04").
   string platform_version = 8;
+
+  // Kernel version (e.g., "5.15.0-89-generic").
   string kernel_version = 9;
+
+  // Kernel architecture (e.g., "x86_64").
   string kernel_arch = 10;
+
+  // Unique identifier for the host (as reported by the system, usually from DMI or machine-id).
   string host_id = 11;
 
+  // Aggregated CPU usage percentage across all logical CPUs over the last sampling interval.
   double total_cpu_percentage = 12;
+
+  // Detailed metrics and metadata for each logical CPU on the node.
   repeated CpuInfo cpu_infos = 13;
 
+  // Total system memory in bytes.
   uint64 total_memory = 14;
+
+  // Available memory in bytes (free + buffers/cache).
   uint64 available_memory = 15;
+
+  // Used memory in bytes (total - available).
   uint64 used_memory = 16;
+
+  // Percentage of memory used (used / total * 100).
   double memory_used_perc = 17;
 
   // TODO Disk
 
   // TODO Net
 
+  // Pressure stall information for CPU-related resource contention.
   PsiMetrics psi_cpu_metrics = 18;
+
+  // Pressure stall information for memory-related resource contention.
   PsiMetrics psi_memory_metrics = 19;
+
+  // Pressure stall information for I/O-related resource contention.
   PsiMetrics psi_io_metrics = 20;
 
+  // List of all network interfaces present on the node, including their metadata and IPs.
   repeated InterfaceStat network_interfaces = 21;
 }
 
-// --- Container Metrics ---
+// CpuMetrics represents CPU usage statistics for a container at a specific point in time.
 message CpuMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
   int64 timestamp = 1;
+
+  // Cumulative CPU usage across all cores, in nanocores, since the container was created.
   google.protobuf.UInt64Value usage_nano_cores = 2;
+
+  // Cumulative CPU usage across all cores, in core-nanoseconds, since container creation.
+  // This represents the total active CPU time.
   google.protobuf.UInt64Value usage_core_nano_seconds = 3;
 }
 
+// MemoryMetrics provides detailed memory usage statistics for a container.
 message MemoryMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
   int64 timestamp = 1;
+
+  // Working set memory in bytes (memory actively used and not easily reclaimed).
   google.protobuf.UInt64Value working_set_bytes = 2;
+
+  // Estimated memory available for use: memory limit - working set.
   google.protobuf.UInt64Value available_bytes = 3;
+
+  // Total memory usage in bytes (including cached, buffered, and active pages).
   google.protobuf.UInt64Value usage_bytes = 4;
+
+  // Resident Set Size: physical memory used (anonymous + swap cache + THP).
   google.protobuf.UInt64Value rss_bytes = 5;
+
+  // Total number of minor page faults (no I/O).
   google.protobuf.UInt64Value page_faults = 6;
+
+  // Total number of major page faults (I/O was needed to fulfill the request).
   google.protobuf.UInt64Value major_page_faults = 7;
 }
 
+// FileSystemMetrics captures file system usage related to a container.
 message FileSystemMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
   int64 timestamp = 1;
+
+  // Mount point path of the file system.
   string mountpoint = 2;
+
+  // Total bytes used by the container image layer on this file system.
   google.protobuf.UInt64Value used_bytes = 3;
+
+  // Number of inodes used by the container images.
   google.protobuf.UInt64Value inodes_used = 4;
 }
 
+// SwapMetrics reports swap usage for a container.
 message SwapMetrics {
+  // Collection timestamp in nanoseconds since epoch. Must be > 0.
   int64 timestamp = 1;
+
+  // Available swap in bytes: swap limit - used.
   google.protobuf.UInt64Value available_bytes = 2;
+
+  // Total swap usage in bytes.
   google.protobuf.UInt64Value usage_bytes = 3;
 }
 
-// --- Container (within Pod) ---
+// ContainerMetrics represents all runtime metrics for a single container.
 message ContainerMetrics {
-  string id = 1;              // ID of the container.
-  string name = 2;            // Name of the container. Same as the container name in the PodSpec.
-  string image = 3;
-  int64 created_at = 4;
-  string state = 5;
-  uint32 attempt = 6;         // Attempt number of creating the container.
+  // Unique container ID (as provided by CRI).
+  string id = 1;
 
+  // Container name (as specified in the PodSpec).
+  string name = 2;
+
+  // Image identifier (e.g., imageID or image digest).
+  string image = 3;
+
+  // Timestamp of container creation in nanoseconds since epoch.
+  int64 created_at = 4;
+
+  // Container state (e.g., "CONTAINER_RUNNING", "CONTAINER_EXITED", etc.).
+  string state = 5;
+
+  // Number of times the container has been (re)created. Starts at 0.
+  uint32 attempt = 6;
+
+  // CPU usage metrics.
   CpuMetrics cpu_metrics = 7;
+
+  // Memory usage metrics.
   MemoryMetrics memory_metrics = 8;
+
+  // Filesystem usage metrics.
   FileSystemMetrics file_system_metrics = 9;
+
+  // Swap usage metrics.
   SwapMetrics swap_metrics = 10;
 }
 
-// --- Pod Metrics ---
+// PodMetrics encapsulates the runtime metrics for a PodSandbox and its containers.
 message PodMetrics {
+  // ID of the PodSandbox (as returned by CRI).
   string id = 1;
+
+  // UID of the pod (matches metadata.uid in the Kubernetes API).
   string uid = 2;
+
+  // Name of the pod (matches metadata.name).
   string name = 3;
+
+  // Namespace of the pod (matches metadata.namespace).
   string namespace = 4;
+
+  // PodSandbox creation timestamp in nanoseconds since epoch.
   int64 created_at = 5;
+
+  // PodSandbox state (e.g., "SANDBOX_READY", "SANDBOX_NOTREADY").
   string state = 6;
+
+  // Number of times the sandbox has been (re)created. Starts at 0.
   uint32 attempt = 7;
 
+  // List of container metrics for each container running inside the pod.
   repeated ContainerMetrics container_metrics = 8;
 }
 
-// --- Root Metrics Message ---
+
+// Metrics is the root message that encapsulates all collected metrics from a node.
+// It includes both node-level metrics (hardware, OS, pressure stats, etc.)
+// and pod-level metrics (for all pods and containers running on the node).
 message Metrics {
+  // System-level metrics for the current node.
   NodeMetrics node_metrics = 1;
+
+  // Runtime metrics for all pods and their containers scheduled on this node.
   repeated PodMetrics pod_metrics = 2;
 }
 
-// --- Service Definition ---
+// MetricsService defines the bi-directional gRPC interface used to send and receive metrics
+// between the agent and the relay or between the relay and external consumers.
 service MetricsService {
-  // In
+  // Receives a continuous stream of Metrics messages from agents.
+  // The agent opens a stream and sends data periodically (e.g., every 5s).
   rpc SendMetrics(stream Metrics) returns (google.protobuf.Empty);
 
-  // Out
+  // Allows a client (e.g., exporter or dashboard) to subscribe to a live stream of metrics.
+  // The relay pushes each incoming Metrics message to all subscribers.
   rpc SubscribeMetrics(google.protobuf.Empty) returns (stream Metrics);
 }
+

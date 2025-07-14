@@ -23,18 +23,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// PsiData represents pressure stall information for a given resource (e.g. CPU, memory, IO).
-// It captures how often and how long tasks have been stalled due to resource pressure.
+// PsiData captures pressure stall information (PSI) for a specific resource type
+// such as CPU, memory, or I/O. It quantifies how often and how severely the system
+// experienced delays due to contention for that resource.
 type PsiData struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Total time (in microseconds) that tasks have been stalled since boot.
+	// Cumulative time (in microseconds) that tasks have been stalled due to resource pressure since system boot.
 	Total *wrapperspb.UInt64Value `protobuf:"bytes,1,opt,name=total,proto3" json:"total,omitempty"`
-	// Average percentage of time over the past 10 seconds that tasks were stalled.
-	// This value is between 0.0 and 100.0.
+	// Rolling average of stall time over the last 10 seconds, expressed as a percentage (0.0–100.0).
 	Avg10 *wrapperspb.DoubleValue `protobuf:"bytes,2,opt,name=avg10,proto3" json:"avg10,omitempty"`
-	// Average percentage of time over the past 60 seconds that tasks were stalled.
+	// Rolling average of stall time over the last 60 seconds, expressed as a percentage (0.0–100.0).
 	Avg60 *wrapperspb.DoubleValue `protobuf:"bytes,3,opt,name=avg60,proto3" json:"avg60,omitempty"`
-	// Average percentage of time over the past 300 seconds that tasks were stalled.
+	// Rolling average of stall time over the last 300 seconds, expressed as a percentage (0.0–100.0).
 	Avg300        *wrapperspb.DoubleValue `protobuf:"bytes,4,opt,name=avg300,proto3" json:"avg300,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -98,13 +98,14 @@ func (x *PsiData) GetAvg300() *wrapperspb.DoubleValue {
 	return nil
 }
 
+// PsiMetrics reports pressure stall metrics for a resource in two distinct conditions:
+// - 'some': partial contention (some tasks stalled)
+// - 'full': total contention (all tasks stalled)
 type PsiMetrics struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 'some' indicates the time when at least one task was stalled due to resource contention.
-	// This reflects partial pressure situations where progress is still being made by other tasks.
+	// Represents partial pressure — periods when at least one task was stalled, but others may have progressed.
 	Some *PsiData `protobuf:"bytes,1,opt,name=some,proto3" json:"some,omitempty"`
-	// 'full' indicates the time when all non-idle tasks were stalled simultaneously.
-	// This reflects severe contention where no useful work could be performed.
+	// Represents full pressure — periods when all non-idle tasks were stalled and no useful work could be done.
 	Full          *PsiData `protobuf:"bytes,2,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -154,20 +155,20 @@ func (x *PsiMetrics) GetFull() *PsiData {
 	return nil
 }
 
-// InterfaceStat describes the configuration and status of a network interface on the node.
+// InterfaceStat describes the state and configuration of a network interface on the node.
 type InterfaceStat struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The system-assigned index of the network interface.
+	// System-assigned index for the network interface.
 	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
-	// The Maximum Transmission Unit (MTU) size in bytes.
+	// Maximum Transmission Unit (MTU) in bytes.
 	Mtu int32 `protobuf:"varint,2,opt,name=mtu,proto3" json:"mtu,omitempty"`
-	// The name of the network interface (e.g., "eth0", "lo").
+	// Interface name (e.g., "eth0", "lo").
 	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	// The MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
+	// MAC address of the interface (e.g., "00:1a:2b:3c:4d:5e").
 	HardwareAddr string `protobuf:"bytes,4,opt,name=hardwareAddr,proto3" json:"hardwareAddr,omitempty"`
-	// A list of operational flags associated with the interface (e.g., "up", "broadcast", "loopback").
+	// List of operational flags set on the interface (e.g., "up", "broadcast", "loopback").
 	Flags []string `protobuf:"bytes,5,rep,name=flags,proto3" json:"flags,omitempty"`
-	// A list of IP addresses assigned to the interface (both IPv4 and IPv6).
+	// IP addresses assigned to the interface, including both IPv4 and IPv6.
 	Addrs         []string `protobuf:"bytes,6,rep,name=addrs,proto3" json:"addrs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -245,18 +246,25 @@ func (x *InterfaceStat) GetAddrs() []string {
 	return nil
 }
 
-// Each CpuInfo represents a single logical CPU (i.e., a thread).
-// Multiple logical CPUs may share the same core and physical CPU (socket).
+// CpuInfo provides metadata and real-time usage for a single logical CPU (hardware thread).
+// Logical CPUs are grouped into cores and physical sockets (CPUs).
 type CpuInfo struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Model      string                 `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
-	Cores      int32                  `protobuf:"varint,2,opt,name=cores,proto3" json:"cores,omitempty"` // Number of cores on the physical CPU (repeated across entries)
-	Mhz        int32                  `protobuf:"varint,3,opt,name=mhz,proto3" json:"mhz,omitempty"`
-	VendorId   string                 `protobuf:"bytes,4,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
-	PhysicalId string                 `protobuf:"bytes,5,opt,name=physical_id,json=physicalId,proto3" json:"physical_id,omitempty"` // Physical CPU/socket identifier
-	CoreId     string                 `protobuf:"bytes,6,opt,name=core_id,json=coreId,proto3" json:"core_id,omitempty"`             // Core identifier within the socket
-	Cpu        int32                  `protobuf:"varint,7,opt,name=cpu,proto3" json:"cpu,omitempty"`                                // Logical CPU ID (thread), as seen by the OS
-	// Percentage usage of this logical CPU over the sampling interval (e.g., 1s).
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Model name of the processor (e.g., "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz").
+	Model string `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
+	// Number of physical cores reported for the CPU. May be duplicated across logical threads.
+	Cores int32 `protobuf:"varint,2,opt,name=cores,proto3" json:"cores,omitempty"`
+	// Clock speed in MHz.
+	Mhz int32 `protobuf:"varint,3,opt,name=mhz,proto3" json:"mhz,omitempty"`
+	// Vendor identifier (e.g., "GenuineIntel", "AuthenticAMD").
+	VendorId string `protobuf:"bytes,4,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
+	// Identifier of the physical CPU socket.
+	PhysicalId string `protobuf:"bytes,5,opt,name=physical_id,json=physicalId,proto3" json:"physical_id,omitempty"`
+	// Identifier of the core within the physical socket.
+	CoreId string `protobuf:"bytes,6,opt,name=core_id,json=coreId,proto3" json:"core_id,omitempty"`
+	// Logical CPU/thread ID as reported by the OS.
+	Cpu int32 `protobuf:"varint,7,opt,name=cpu,proto3" json:"cpu,omitempty"`
+	// Percentage of time this logical CPU was actively executing instructions over the sampling interval (e.g., 1s).
 	Usage         float64 `protobuf:"fixed64,8,opt,name=usage,proto3" json:"usage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -348,31 +356,55 @@ func (x *CpuInfo) GetUsage() float64 {
 	return 0
 }
 
+// NodeMetrics aggregates system-level metrics and metadata for the node where the agent is running.
+// It includes hardware information, OS/kernel metadata, CPU and memory usage, PSI pressure stats,
+// and network interface details.
 type NodeMetrics struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Hostname           string                 `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	Uptime             uint64                 `protobuf:"varint,2,opt,name=uptime,proto3" json:"uptime,omitempty"`
-	BootTime           uint64                 `protobuf:"varint,3,opt,name=boot_time,json=bootTime,proto3" json:"boot_time,omitempty"`
-	Procs              uint64                 `protobuf:"varint,4,opt,name=procs,proto3" json:"procs,omitempty"`
-	Os                 string                 `protobuf:"bytes,5,opt,name=os,proto3" json:"os,omitempty"`
-	Platform           string                 `protobuf:"bytes,6,opt,name=platform,proto3" json:"platform,omitempty"`
-	PlatformFamily     string                 `protobuf:"bytes,7,opt,name=platform_family,json=platformFamily,proto3" json:"platform_family,omitempty"`
-	PlatformVersion    string                 `protobuf:"bytes,8,opt,name=platform_version,json=platformVersion,proto3" json:"platform_version,omitempty"`
-	KernelVersion      string                 `protobuf:"bytes,9,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
-	KernelArch         string                 `protobuf:"bytes,10,opt,name=kernel_arch,json=kernelArch,proto3" json:"kernel_arch,omitempty"`
-	HostId             string                 `protobuf:"bytes,11,opt,name=host_id,json=hostId,proto3" json:"host_id,omitempty"`
-	TotalCpuPercentage float64                `protobuf:"fixed64,12,opt,name=total_cpu_percentage,json=totalCpuPercentage,proto3" json:"total_cpu_percentage,omitempty"`
-	CpuInfos           []*CpuInfo             `protobuf:"bytes,13,rep,name=cpu_infos,json=cpuInfos,proto3" json:"cpu_infos,omitempty"`
-	TotalMemory        uint64                 `protobuf:"varint,14,opt,name=total_memory,json=totalMemory,proto3" json:"total_memory,omitempty"`
-	AvailableMemory    uint64                 `protobuf:"varint,15,opt,name=available_memory,json=availableMemory,proto3" json:"available_memory,omitempty"`
-	UsedMemory         uint64                 `protobuf:"varint,16,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
-	MemoryUsedPerc     float64                `protobuf:"fixed64,17,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
-	PsiCpuMetrics      *PsiMetrics            `protobuf:"bytes,18,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
-	PsiMemoryMetrics   *PsiMetrics            `protobuf:"bytes,19,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
-	PsiIoMetrics       *PsiMetrics            `protobuf:"bytes,20,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
-	NetworkInterfaces  []*InterfaceStat       `protobuf:"bytes,21,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Hostname of the node (as reported by the OS).
+	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// Time since last boot (in seconds).
+	Uptime uint64 `protobuf:"varint,2,opt,name=uptime,proto3" json:"uptime,omitempty"`
+	// System boot timestamp (in seconds since epoch).
+	BootTime uint64 `protobuf:"varint,3,opt,name=boot_time,json=bootTime,proto3" json:"boot_time,omitempty"`
+	// Number of running processes on the system.
+	Procs uint64 `protobuf:"varint,4,opt,name=procs,proto3" json:"procs,omitempty"`
+	// Name of the operating system (e.g., "linux").
+	Os string `protobuf:"bytes,5,opt,name=os,proto3" json:"os,omitempty"`
+	// Platform identifier (e.g., "ubuntu", "centos").
+	Platform string `protobuf:"bytes,6,opt,name=platform,proto3" json:"platform,omitempty"`
+	// Platform family (e.g., "debian", "rhel").
+	PlatformFamily string `protobuf:"bytes,7,opt,name=platform_family,json=platformFamily,proto3" json:"platform_family,omitempty"`
+	// Version of the platform (e.g., "20.04").
+	PlatformVersion string `protobuf:"bytes,8,opt,name=platform_version,json=platformVersion,proto3" json:"platform_version,omitempty"`
+	// Kernel version (e.g., "5.15.0-89-generic").
+	KernelVersion string `protobuf:"bytes,9,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
+	// Kernel architecture (e.g., "x86_64").
+	KernelArch string `protobuf:"bytes,10,opt,name=kernel_arch,json=kernelArch,proto3" json:"kernel_arch,omitempty"`
+	// Unique identifier for the host (as reported by the system, usually from DMI or machine-id).
+	HostId string `protobuf:"bytes,11,opt,name=host_id,json=hostId,proto3" json:"host_id,omitempty"`
+	// Aggregated CPU usage percentage across all logical CPUs over the last sampling interval.
+	TotalCpuPercentage float64 `protobuf:"fixed64,12,opt,name=total_cpu_percentage,json=totalCpuPercentage,proto3" json:"total_cpu_percentage,omitempty"`
+	// Detailed metrics and metadata for each logical CPU on the node.
+	CpuInfos []*CpuInfo `protobuf:"bytes,13,rep,name=cpu_infos,json=cpuInfos,proto3" json:"cpu_infos,omitempty"`
+	// Total system memory in bytes.
+	TotalMemory uint64 `protobuf:"varint,14,opt,name=total_memory,json=totalMemory,proto3" json:"total_memory,omitempty"`
+	// Available memory in bytes (free + buffers/cache).
+	AvailableMemory uint64 `protobuf:"varint,15,opt,name=available_memory,json=availableMemory,proto3" json:"available_memory,omitempty"`
+	// Used memory in bytes (total - available).
+	UsedMemory uint64 `protobuf:"varint,16,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
+	// Percentage of memory used (used / total * 100).
+	MemoryUsedPerc float64 `protobuf:"fixed64,17,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
+	// Pressure stall information for CPU-related resource contention.
+	PsiCpuMetrics *PsiMetrics `protobuf:"bytes,18,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
+	// Pressure stall information for memory-related resource contention.
+	PsiMemoryMetrics *PsiMetrics `protobuf:"bytes,19,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
+	// Pressure stall information for I/O-related resource contention.
+	PsiIoMetrics *PsiMetrics `protobuf:"bytes,20,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
+	// List of all network interfaces present on the node, including their metadata and IPs.
+	NetworkInterfaces []*InterfaceStat `protobuf:"bytes,21,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *NodeMetrics) Reset() {
@@ -552,11 +584,15 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 	return nil
 }
 
-// --- Container Metrics ---
+// CpuMetrics represents CPU usage statistics for a container at a specific point in time.
 type CpuMetrics struct {
-	state                protoimpl.MessageState  `protogen:"open.v1"`
-	Timestamp            int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	UsageNanoCores       *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Collection timestamp in nanoseconds since epoch. Must be > 0.
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Cumulative CPU usage across all cores, in nanocores, since the container was created.
+	UsageNanoCores *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=usage_nano_cores,json=usageNanoCores,proto3" json:"usage_nano_cores,omitempty"`
+	// Cumulative CPU usage across all cores, in core-nanoseconds, since container creation.
+	// This represents the total active CPU time.
 	UsageCoreNanoSeconds *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=usage_core_nano_seconds,json=usageCoreNanoSeconds,proto3" json:"usage_core_nano_seconds,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -613,14 +649,22 @@ func (x *CpuMetrics) GetUsageCoreNanoSeconds() *wrapperspb.UInt64Value {
 	return nil
 }
 
+// MemoryMetrics provides detailed memory usage statistics for a container.
 type MemoryMetrics struct {
-	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Timestamp       int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Collection timestamp in nanoseconds since epoch. Must be > 0.
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Working set memory in bytes (memory actively used and not easily reclaimed).
 	WorkingSetBytes *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=working_set_bytes,json=workingSetBytes,proto3" json:"working_set_bytes,omitempty"`
-	AvailableBytes  *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes      *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
-	RssBytes        *wrapperspb.UInt64Value `protobuf:"bytes,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
-	PageFaults      *wrapperspb.UInt64Value `protobuf:"bytes,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
+	// Estimated memory available for use: memory limit - working set.
+	AvailableBytes *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
+	// Total memory usage in bytes (including cached, buffered, and active pages).
+	UsageBytes *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	// Resident Set Size: physical memory used (anonymous + swap cache + THP).
+	RssBytes *wrapperspb.UInt64Value `protobuf:"bytes,5,opt,name=rss_bytes,json=rssBytes,proto3" json:"rss_bytes,omitempty"`
+	// Total number of minor page faults (no I/O).
+	PageFaults *wrapperspb.UInt64Value `protobuf:"bytes,6,opt,name=page_faults,json=pageFaults,proto3" json:"page_faults,omitempty"`
+	// Total number of major page faults (I/O was needed to fulfill the request).
 	MajorPageFaults *wrapperspb.UInt64Value `protobuf:"bytes,7,opt,name=major_page_faults,json=majorPageFaults,proto3" json:"major_page_faults,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -705,11 +749,16 @@ func (x *MemoryMetrics) GetMajorPageFaults() *wrapperspb.UInt64Value {
 	return nil
 }
 
+// FileSystemMetrics captures file system usage related to a container.
 type FileSystemMetrics struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Timestamp     int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Mountpoint    string                  `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
-	UsedBytes     *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Collection timestamp in nanoseconds since epoch. Must be > 0.
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Mount point path of the file system.
+	Mountpoint string `protobuf:"bytes,2,opt,name=mountpoint,proto3" json:"mountpoint,omitempty"`
+	// Total bytes used by the container image layer on this file system.
+	UsedBytes *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=used_bytes,json=usedBytes,proto3" json:"used_bytes,omitempty"`
+	// Number of inodes used by the container images.
 	InodesUsed    *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=inodes_used,json=inodesUsed,proto3" json:"inodes_used,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -773,13 +822,17 @@ func (x *FileSystemMetrics) GetInodesUsed() *wrapperspb.UInt64Value {
 	return nil
 }
 
+// SwapMetrics reports swap usage for a container.
 type SwapMetrics struct {
-	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Timestamp      int64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Collection timestamp in nanoseconds since epoch. Must be > 0.
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Available swap in bytes: swap limit - used.
 	AvailableBytes *wrapperspb.UInt64Value `protobuf:"bytes,2,opt,name=available_bytes,json=availableBytes,proto3" json:"available_bytes,omitempty"`
-	UsageBytes     *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Total swap usage in bytes.
+	UsageBytes    *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=usage_bytes,json=usageBytes,proto3" json:"usage_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SwapMetrics) Reset() {
@@ -833,21 +886,31 @@ func (x *SwapMetrics) GetUsageBytes() *wrapperspb.UInt64Value {
 	return nil
 }
 
-// --- Container (within Pod) ---
+// ContainerMetrics represents all runtime metrics for a single container.
 type ContainerMetrics struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // ID of the container.
-	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"` // Name of the container. Same as the container name in the PodSpec.
-	Image             string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
-	CreatedAt         int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	State             string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
-	Attempt           uint32                 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"` // Attempt number of creating the container.
-	CpuMetrics        *CpuMetrics            `protobuf:"bytes,7,opt,name=cpu_metrics,json=cpuMetrics,proto3" json:"cpu_metrics,omitempty"`
-	MemoryMetrics     *MemoryMetrics         `protobuf:"bytes,8,opt,name=memory_metrics,json=memoryMetrics,proto3" json:"memory_metrics,omitempty"`
-	FileSystemMetrics *FileSystemMetrics     `protobuf:"bytes,9,opt,name=file_system_metrics,json=fileSystemMetrics,proto3" json:"file_system_metrics,omitempty"`
-	SwapMetrics       *SwapMetrics           `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3" json:"swap_metrics,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique container ID (as provided by CRI).
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Container name (as specified in the PodSpec).
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Image identifier (e.g., imageID or image digest).
+	Image string `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	// Timestamp of container creation in nanoseconds since epoch.
+	CreatedAt int64 `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Container state (e.g., "CONTAINER_RUNNING", "CONTAINER_EXITED", etc.).
+	State string `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	// Number of times the container has been (re)created. Starts at 0.
+	Attempt uint32 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// CPU usage metrics.
+	CpuMetrics *CpuMetrics `protobuf:"bytes,7,opt,name=cpu_metrics,json=cpuMetrics,proto3" json:"cpu_metrics,omitempty"`
+	// Memory usage metrics.
+	MemoryMetrics *MemoryMetrics `protobuf:"bytes,8,opt,name=memory_metrics,json=memoryMetrics,proto3" json:"memory_metrics,omitempty"`
+	// Filesystem usage metrics.
+	FileSystemMetrics *FileSystemMetrics `protobuf:"bytes,9,opt,name=file_system_metrics,json=fileSystemMetrics,proto3" json:"file_system_metrics,omitempty"`
+	// Swap usage metrics.
+	SwapMetrics   *SwapMetrics `protobuf:"bytes,10,opt,name=swap_metrics,json=swapMetrics,proto3" json:"swap_metrics,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ContainerMetrics) Reset() {
@@ -950,17 +1013,25 @@ func (x *ContainerMetrics) GetSwapMetrics() *SwapMetrics {
 	return nil
 }
 
-// --- Pod Metrics ---
+// PodMetrics encapsulates the runtime metrics for a PodSandbox and its containers.
 type PodMetrics struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Uid              string                 `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Namespace        string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	CreatedAt        int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	State            string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
-	Attempt          uint32                 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`
-	ContainerMetrics []*ContainerMetrics    `protobuf:"bytes,8,rep,name=container_metrics,json=containerMetrics,proto3" json:"container_metrics,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ID of the PodSandbox (as returned by CRI).
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// UID of the pod (matches metadata.uid in the Kubernetes API).
+	Uid string `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	// Name of the pod (matches metadata.name).
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	// Namespace of the pod (matches metadata.namespace).
+	Namespace string `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	// PodSandbox creation timestamp in nanoseconds since epoch.
+	CreatedAt int64 `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// PodSandbox state (e.g., "SANDBOX_READY", "SANDBOX_NOTREADY").
+	State string `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
+	// Number of times the sandbox has been (re)created. Starts at 0.
+	Attempt uint32 `protobuf:"varint,7,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// List of container metrics for each container running inside the pod.
+	ContainerMetrics []*ContainerMetrics `protobuf:"bytes,8,rep,name=container_metrics,json=containerMetrics,proto3" json:"container_metrics,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1051,11 +1122,15 @@ func (x *PodMetrics) GetContainerMetrics() []*ContainerMetrics {
 	return nil
 }
 
-// --- Root Metrics Message ---
+// Metrics is the root message that encapsulates all collected metrics from a node.
+// It includes both node-level metrics (hardware, OS, pressure stats, etc.)
+// and pod-level metrics (for all pods and containers running on the node).
 type Metrics struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NodeMetrics   *NodeMetrics           `protobuf:"bytes,1,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`
-	PodMetrics    []*PodMetrics          `protobuf:"bytes,2,rep,name=pod_metrics,json=podMetrics,proto3" json:"pod_metrics,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// System-level metrics for the current node.
+	NodeMetrics *NodeMetrics `protobuf:"bytes,1,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`
+	// Runtime metrics for all pods and their containers scheduled on this node.
+	PodMetrics    []*PodMetrics `protobuf:"bytes,2,rep,name=pod_metrics,json=podMetrics,proto3" json:"pod_metrics,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
