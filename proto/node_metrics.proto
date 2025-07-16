@@ -13,75 +13,81 @@ message NodeMetrics {
   // Hostname of the node (as reported by the OS).
   string hostname = 1;
 
+  // Primary IPv4
+  google.protobuf.StringValue primary_ipv4 = 2;
+
+  // Primary IPv6
+  google.protobuf.StringValue primary_ipv6 = 3;
+
   // Time since last boot (in seconds).
-  uint64 uptime = 2;
+  uint64 uptime = 5;
 
   // System boot timestamp (in seconds since epoch).
-  uint64 boot_time = 3;
+  uint64 boot_time = 6;
 
   // Number of running processes on the system.
-  uint64 procs = 4;
+  uint64 procs = 7;
 
   // Name of the operating system (e.g., "linux").
-  string os = 5;
+  string os = 8;
 
   // Platform identifier (e.g., "ubuntu", "centos").
-  string platform = 6;
+  string platform = 9;
 
   // Platform family (e.g., "debian", "rhel").
-  string platform_family = 7;
+  string platform_family = 10;
 
   // Version of the platform (e.g., "20.04").
-  string platform_version = 8;
+  string platform_version = 11;
 
   // Kernel version (e.g., "5.15.0-89-generic").
-  string kernel_version = 9;
+  string kernel_version = 12;
 
   // Kernel architecture (e.g., "x86_64").
-  string kernel_arch = 10;
+  string kernel_arch = 13;
 
   // Unique identifier for the host (as reported by the system, usually from DMI or machine-id).
-  string host_id = 11;
+  string host_id = 14;
 
   // Aggregated CPU usage percentage across all logical CPUs over the last sampling interval.
-  double total_cpu_percentage = 12;
+  double total_cpu_percentage = 15;
 
   // Detailed metrics and metadata for each logical CPU on the node.
-  repeated CpuInfo cpu_infos = 13;
+  repeated CpuInfo cpu_infos = 16;
 
   // Total system memory in bytes.
-  uint64 total_memory = 14;
+  uint64 total_memory = 17;
 
   // Available memory in bytes (free + buffers/cache).
-  uint64 available_memory = 15;
+  uint64 available_memory = 18;
 
   // Used memory in bytes (total - available).
-  uint64 used_memory = 16;
+  uint64 used_memory = 19;
 
   // Percentage of memory used (used / total * 100).
-  double memory_used_perc = 17;
+  double memory_used_perc = 20;
 
   // Aggregated network usage statistics across all network interfaces.
-  NetUsage net_usage = 18;
+  NetUsage net_usage = 21;
 
   // Disk usage statistics for all mounted file systems on the node,
   // including capacity, free/used space, and file system type.
-  repeated DiskUsage disk_usages = 19;
+  repeated DiskUsage disk_usages = 22;
 
   // Aggregated disk I/O statistics for the entire node.
-  DiskIOSummary disk_io_summary = 20;
+  DiskIOSummary disk_io_summary = 23;
 
   // Pressure stall information for CPU-related resource contention.
-  PsiMetrics psi_cpu_metrics = 21;
+  PsiMetrics psi_cpu_metrics = 24;
 
   // Pressure stall information for memory-related resource contention.
-  PsiMetrics psi_memory_metrics = 22;
+  PsiMetrics psi_memory_metrics = 25;
 
   // Pressure stall information for I/O-related resource contention.
-  PsiMetrics psi_io_metrics = 23;
+  PsiMetrics psi_io_metrics = 26;
 
   // List of all network interfaces present on the node, including their metadata and IPs.
-  repeated InterfaceStat network_interfaces = 24;
+  repeated InterfaceStat network_interfaces = 27;
 }
 
 // CpuInfo provides metadata and real-time usage for a single logical CPU (hardware thread).

@@ -3,6 +3,7 @@ package node
 import (
 	"github.com/shirou/gopsutil/v3/net"
 	"gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"strings"
 )
 
 func netUsage(stat net.IOCountersStat) *gen.NetUsage {
@@ -39,4 +40,58 @@ func networkInterfaces(interfaces net.InterfaceStatList) []*gen.InterfaceStat {
 		})
 	}
 	return networkInterfaces
+}
+
+func getPrimaryIPs(interfaces []*gen.InterfaceStat) (string, string) {
+	skipPrefixes := []string{"lo", "cali", "veth", "docker", "br-", "tunl", "flannel"}
+
+	var ipv4Addr, ipv6Addr string
+
+	for _, iface := range interfaces {
+		skip := false
+		for _, prefix := range skipPrefixes {
+			if strings.HasPrefix(iface.Name, prefix) {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+
+		isLoopback := false
+		for _, flag := range iface.Flags {
+			if strings.ToLower(flag) == "loopback" {
+				isLoopback = true
+				break
+			}
+		}
+		if isLoopback {
+			continue
+		}
+
+		for _, addr := range iface.Addrs {
+			ip := strings.Split(addr, "/")[0]
+
+			if strings.HasPrefix(ip, "127.") || ip == "::1" {
+				continue
+			}
+
+			if strings.Contains(ip, ":") {
+				if ipv6Addr == "" {
+					ipv6Addr = ip
+				}
+			} else {
+				if ipv4Addr == "" {
+					ipv4Addr = ip
+				}
+			}
+
+			// Stop if both addresses found
+			if ipv4Addr != "" && ipv6Addr != "" {
+				return ipv4Addr, ipv6Addr
+			}
+		}
+	}
+	return ipv4Addr, ipv6Addr
 }
