@@ -29,53 +29,57 @@ type NodeMetrics struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Hostname of the node (as reported by the OS).
 	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// Primary IPv4
+	PrimaryIpv4 *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=primary_ipv4,json=primaryIpv4,proto3" json:"primary_ipv4,omitempty"`
+	// Primary IPv6
+	PrimaryIpv6 *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=primary_ipv6,json=primaryIpv6,proto3" json:"primary_ipv6,omitempty"`
 	// Time since last boot (in seconds).
-	Uptime uint64 `protobuf:"varint,2,opt,name=uptime,proto3" json:"uptime,omitempty"`
+	Uptime uint64 `protobuf:"varint,5,opt,name=uptime,proto3" json:"uptime,omitempty"`
 	// System boot timestamp (in seconds since epoch).
-	BootTime uint64 `protobuf:"varint,3,opt,name=boot_time,json=bootTime,proto3" json:"boot_time,omitempty"`
+	BootTime uint64 `protobuf:"varint,6,opt,name=boot_time,json=bootTime,proto3" json:"boot_time,omitempty"`
 	// Number of running processes on the system.
-	Procs uint64 `protobuf:"varint,4,opt,name=procs,proto3" json:"procs,omitempty"`
+	Procs uint64 `protobuf:"varint,7,opt,name=procs,proto3" json:"procs,omitempty"`
 	// Name of the operating system (e.g., "linux").
-	Os string `protobuf:"bytes,5,opt,name=os,proto3" json:"os,omitempty"`
+	Os string `protobuf:"bytes,8,opt,name=os,proto3" json:"os,omitempty"`
 	// Platform identifier (e.g., "ubuntu", "centos").
-	Platform string `protobuf:"bytes,6,opt,name=platform,proto3" json:"platform,omitempty"`
+	Platform string `protobuf:"bytes,9,opt,name=platform,proto3" json:"platform,omitempty"`
 	// Platform family (e.g., "debian", "rhel").
-	PlatformFamily string `protobuf:"bytes,7,opt,name=platform_family,json=platformFamily,proto3" json:"platform_family,omitempty"`
+	PlatformFamily string `protobuf:"bytes,10,opt,name=platform_family,json=platformFamily,proto3" json:"platform_family,omitempty"`
 	// Version of the platform (e.g., "20.04").
-	PlatformVersion string `protobuf:"bytes,8,opt,name=platform_version,json=platformVersion,proto3" json:"platform_version,omitempty"`
+	PlatformVersion string `protobuf:"bytes,11,opt,name=platform_version,json=platformVersion,proto3" json:"platform_version,omitempty"`
 	// Kernel version (e.g., "5.15.0-89-generic").
-	KernelVersion string `protobuf:"bytes,9,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
+	KernelVersion string `protobuf:"bytes,12,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
 	// Kernel architecture (e.g., "x86_64").
-	KernelArch string `protobuf:"bytes,10,opt,name=kernel_arch,json=kernelArch,proto3" json:"kernel_arch,omitempty"`
+	KernelArch string `protobuf:"bytes,13,opt,name=kernel_arch,json=kernelArch,proto3" json:"kernel_arch,omitempty"`
 	// Unique identifier for the host (as reported by the system, usually from DMI or machine-id).
-	HostId string `protobuf:"bytes,11,opt,name=host_id,json=hostId,proto3" json:"host_id,omitempty"`
+	HostId string `protobuf:"bytes,14,opt,name=host_id,json=hostId,proto3" json:"host_id,omitempty"`
 	// Aggregated CPU usage percentage across all logical CPUs over the last sampling interval.
-	TotalCpuPercentage float64 `protobuf:"fixed64,12,opt,name=total_cpu_percentage,json=totalCpuPercentage,proto3" json:"total_cpu_percentage,omitempty"`
+	TotalCpuPercentage float64 `protobuf:"fixed64,15,opt,name=total_cpu_percentage,json=totalCpuPercentage,proto3" json:"total_cpu_percentage,omitempty"`
 	// Detailed metrics and metadata for each logical CPU on the node.
-	CpuInfos []*CpuInfo `protobuf:"bytes,13,rep,name=cpu_infos,json=cpuInfos,proto3" json:"cpu_infos,omitempty"`
+	CpuInfos []*CpuInfo `protobuf:"bytes,16,rep,name=cpu_infos,json=cpuInfos,proto3" json:"cpu_infos,omitempty"`
 	// Total system memory in bytes.
-	TotalMemory uint64 `protobuf:"varint,14,opt,name=total_memory,json=totalMemory,proto3" json:"total_memory,omitempty"`
+	TotalMemory uint64 `protobuf:"varint,17,opt,name=total_memory,json=totalMemory,proto3" json:"total_memory,omitempty"`
 	// Available memory in bytes (free + buffers/cache).
-	AvailableMemory uint64 `protobuf:"varint,15,opt,name=available_memory,json=availableMemory,proto3" json:"available_memory,omitempty"`
+	AvailableMemory uint64 `protobuf:"varint,18,opt,name=available_memory,json=availableMemory,proto3" json:"available_memory,omitempty"`
 	// Used memory in bytes (total - available).
-	UsedMemory uint64 `protobuf:"varint,16,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
+	UsedMemory uint64 `protobuf:"varint,19,opt,name=used_memory,json=usedMemory,proto3" json:"used_memory,omitempty"`
 	// Percentage of memory used (used / total * 100).
-	MemoryUsedPerc float64 `protobuf:"fixed64,17,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
+	MemoryUsedPerc float64 `protobuf:"fixed64,20,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
 	// Aggregated network usage statistics across all network interfaces.
-	NetUsage *NetUsage `protobuf:"bytes,18,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
+	NetUsage *NetUsage `protobuf:"bytes,21,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
 	// Disk usage statistics for all mounted file systems on the node,
 	// including capacity, free/used space, and file system type.
-	DiskUsages []*DiskUsage `protobuf:"bytes,19,rep,name=disk_usages,json=diskUsages,proto3" json:"disk_usages,omitempty"`
+	DiskUsages []*DiskUsage `protobuf:"bytes,22,rep,name=disk_usages,json=diskUsages,proto3" json:"disk_usages,omitempty"`
 	// Aggregated disk I/O statistics for the entire node.
-	DiskIoSummary *DiskIOSummary `protobuf:"bytes,20,opt,name=disk_io_summary,json=diskIoSummary,proto3" json:"disk_io_summary,omitempty"`
+	DiskIoSummary *DiskIOSummary `protobuf:"bytes,23,opt,name=disk_io_summary,json=diskIoSummary,proto3" json:"disk_io_summary,omitempty"`
 	// Pressure stall information for CPU-related resource contention.
-	PsiCpuMetrics *PsiMetrics `protobuf:"bytes,21,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
+	PsiCpuMetrics *PsiMetrics `protobuf:"bytes,24,opt,name=psi_cpu_metrics,json=psiCpuMetrics,proto3" json:"psi_cpu_metrics,omitempty"`
 	// Pressure stall information for memory-related resource contention.
-	PsiMemoryMetrics *PsiMetrics `protobuf:"bytes,22,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
+	PsiMemoryMetrics *PsiMetrics `protobuf:"bytes,25,opt,name=psi_memory_metrics,json=psiMemoryMetrics,proto3" json:"psi_memory_metrics,omitempty"`
 	// Pressure stall information for I/O-related resource contention.
-	PsiIoMetrics *PsiMetrics `protobuf:"bytes,23,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
+	PsiIoMetrics *PsiMetrics `protobuf:"bytes,26,opt,name=psi_io_metrics,json=psiIoMetrics,proto3" json:"psi_io_metrics,omitempty"`
 	// List of all network interfaces present on the node, including their metadata and IPs.
-	NetworkInterfaces []*InterfaceStat `protobuf:"bytes,24,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
+	NetworkInterfaces []*InterfaceStat `protobuf:"bytes,27,rep,name=network_interfaces,json=networkInterfaces,proto3" json:"network_interfaces,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -115,6 +119,20 @@ func (x *NodeMetrics) GetHostname() string {
 		return x.Hostname
 	}
 	return ""
+}
+
+func (x *NodeMetrics) GetPrimaryIpv4() *wrapperspb.StringValue {
+	if x != nil {
+		return x.PrimaryIpv4
+	}
+	return nil
+}
+
+func (x *NodeMetrics) GetPrimaryIpv6() *wrapperspb.StringValue {
+	if x != nil {
+		return x.PrimaryIpv6
+	}
+	return nil
 }
 
 func (x *NodeMetrics) GetUptime() uint64 {
@@ -917,36 +935,38 @@ var File_proto_node_metrics_proto protoreflect.FileDescriptor
 
 const file_proto_node_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/node_metrics.proto\x12\ametrics\x1a\x1egoogle/protobuf/wrappers.proto\"\xf6\a\n" +
+	"\x18proto/node_metrics.proto\x12\ametrics\x1a\x1egoogle/protobuf/wrappers.proto\"\xf8\b\n" +
 	"\vNodeMetrics\x12\x1a\n" +
-	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x16\n" +
-	"\x06uptime\x18\x02 \x01(\x04R\x06uptime\x12\x1b\n" +
-	"\tboot_time\x18\x03 \x01(\x04R\bbootTime\x12\x14\n" +
-	"\x05procs\x18\x04 \x01(\x04R\x05procs\x12\x0e\n" +
-	"\x02os\x18\x05 \x01(\tR\x02os\x12\x1a\n" +
-	"\bplatform\x18\x06 \x01(\tR\bplatform\x12'\n" +
-	"\x0fplatform_family\x18\a \x01(\tR\x0eplatformFamily\x12)\n" +
-	"\x10platform_version\x18\b \x01(\tR\x0fplatformVersion\x12%\n" +
-	"\x0ekernel_version\x18\t \x01(\tR\rkernelVersion\x12\x1f\n" +
-	"\vkernel_arch\x18\n" +
-	" \x01(\tR\n" +
+	"\bhostname\x18\x01 \x01(\tR\bhostname\x12?\n" +
+	"\fprimary_ipv4\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\vprimaryIpv4\x12?\n" +
+	"\fprimary_ipv6\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\vprimaryIpv6\x12\x16\n" +
+	"\x06uptime\x18\x05 \x01(\x04R\x06uptime\x12\x1b\n" +
+	"\tboot_time\x18\x06 \x01(\x04R\bbootTime\x12\x14\n" +
+	"\x05procs\x18\a \x01(\x04R\x05procs\x12\x0e\n" +
+	"\x02os\x18\b \x01(\tR\x02os\x12\x1a\n" +
+	"\bplatform\x18\t \x01(\tR\bplatform\x12'\n" +
+	"\x0fplatform_family\x18\n" +
+	" \x01(\tR\x0eplatformFamily\x12)\n" +
+	"\x10platform_version\x18\v \x01(\tR\x0fplatformVersion\x12%\n" +
+	"\x0ekernel_version\x18\f \x01(\tR\rkernelVersion\x12\x1f\n" +
+	"\vkernel_arch\x18\r \x01(\tR\n" +
 	"kernelArch\x12\x17\n" +
-	"\ahost_id\x18\v \x01(\tR\x06hostId\x120\n" +
-	"\x14total_cpu_percentage\x18\f \x01(\x01R\x12totalCpuPercentage\x12-\n" +
-	"\tcpu_infos\x18\r \x03(\v2\x10.metrics.CpuInfoR\bcpuInfos\x12!\n" +
-	"\ftotal_memory\x18\x0e \x01(\x04R\vtotalMemory\x12)\n" +
-	"\x10available_memory\x18\x0f \x01(\x04R\x0favailableMemory\x12\x1f\n" +
-	"\vused_memory\x18\x10 \x01(\x04R\n" +
+	"\ahost_id\x18\x0e \x01(\tR\x06hostId\x120\n" +
+	"\x14total_cpu_percentage\x18\x0f \x01(\x01R\x12totalCpuPercentage\x12-\n" +
+	"\tcpu_infos\x18\x10 \x03(\v2\x10.metrics.CpuInfoR\bcpuInfos\x12!\n" +
+	"\ftotal_memory\x18\x11 \x01(\x04R\vtotalMemory\x12)\n" +
+	"\x10available_memory\x18\x12 \x01(\x04R\x0favailableMemory\x12\x1f\n" +
+	"\vused_memory\x18\x13 \x01(\x04R\n" +
 	"usedMemory\x12(\n" +
-	"\x10memory_used_perc\x18\x11 \x01(\x01R\x0ememoryUsedPerc\x12.\n" +
-	"\tnet_usage\x18\x12 \x01(\v2\x11.metrics.NetUsageR\bnetUsage\x123\n" +
-	"\vdisk_usages\x18\x13 \x03(\v2\x12.metrics.DiskUsageR\n" +
+	"\x10memory_used_perc\x18\x14 \x01(\x01R\x0ememoryUsedPerc\x12.\n" +
+	"\tnet_usage\x18\x15 \x01(\v2\x11.metrics.NetUsageR\bnetUsage\x123\n" +
+	"\vdisk_usages\x18\x16 \x03(\v2\x12.metrics.DiskUsageR\n" +
 	"diskUsages\x12>\n" +
-	"\x0fdisk_io_summary\x18\x14 \x01(\v2\x16.metrics.DiskIOSummaryR\rdiskIoSummary\x12;\n" +
-	"\x0fpsi_cpu_metrics\x18\x15 \x01(\v2\x13.metrics.PsiMetricsR\rpsiCpuMetrics\x12A\n" +
-	"\x12psi_memory_metrics\x18\x16 \x01(\v2\x13.metrics.PsiMetricsR\x10psiMemoryMetrics\x129\n" +
-	"\x0epsi_io_metrics\x18\x17 \x01(\v2\x13.metrics.PsiMetricsR\fpsiIoMetrics\x12E\n" +
-	"\x12network_interfaces\x18\x18 \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\xc6\x01\n" +
+	"\x0fdisk_io_summary\x18\x17 \x01(\v2\x16.metrics.DiskIOSummaryR\rdiskIoSummary\x12;\n" +
+	"\x0fpsi_cpu_metrics\x18\x18 \x01(\v2\x13.metrics.PsiMetricsR\rpsiCpuMetrics\x12A\n" +
+	"\x12psi_memory_metrics\x18\x19 \x01(\v2\x13.metrics.PsiMetricsR\x10psiMemoryMetrics\x129\n" +
+	"\x0epsi_io_metrics\x18\x1a \x01(\v2\x13.metrics.PsiMetricsR\fpsiIoMetrics\x12E\n" +
+	"\x12network_interfaces\x18\x1b \x03(\v2\x16.metrics.InterfaceStatR\x11networkInterfaces\"\xc6\x01\n" +
 	"\aCpuInfo\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x14\n" +
 	"\x05cores\x18\x02 \x01(\x05R\x05cores\x12\x10\n" +
@@ -1025,29 +1045,32 @@ var file_proto_node_metrics_proto_goTypes = []any{
 	(*InterfaceStat)(nil),          // 5: metrics.InterfaceStat
 	(*PsiData)(nil),                // 6: metrics.PsiData
 	(*PsiMetrics)(nil),             // 7: metrics.PsiMetrics
-	(*wrapperspb.UInt64Value)(nil), // 8: google.protobuf.UInt64Value
-	(*wrapperspb.DoubleValue)(nil), // 9: google.protobuf.DoubleValue
+	(*wrapperspb.StringValue)(nil), // 8: google.protobuf.StringValue
+	(*wrapperspb.UInt64Value)(nil), // 9: google.protobuf.UInt64Value
+	(*wrapperspb.DoubleValue)(nil), // 10: google.protobuf.DoubleValue
 }
 var file_proto_node_metrics_proto_depIdxs = []int32{
-	1,  // 0: metrics.NodeMetrics.cpu_infos:type_name -> metrics.CpuInfo
-	2,  // 1: metrics.NodeMetrics.net_usage:type_name -> metrics.NetUsage
-	3,  // 2: metrics.NodeMetrics.disk_usages:type_name -> metrics.DiskUsage
-	4,  // 3: metrics.NodeMetrics.disk_io_summary:type_name -> metrics.DiskIOSummary
-	7,  // 4: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
-	7,  // 5: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
-	7,  // 6: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
-	5,  // 7: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
-	8,  // 8: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
-	9,  // 9: metrics.PsiData.avg10:type_name -> google.protobuf.DoubleValue
-	9,  // 10: metrics.PsiData.avg60:type_name -> google.protobuf.DoubleValue
-	9,  // 11: metrics.PsiData.avg300:type_name -> google.protobuf.DoubleValue
-	6,  // 12: metrics.PsiMetrics.some:type_name -> metrics.PsiData
-	6,  // 13: metrics.PsiMetrics.full:type_name -> metrics.PsiData
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	8,  // 0: metrics.NodeMetrics.primary_ipv4:type_name -> google.protobuf.StringValue
+	8,  // 1: metrics.NodeMetrics.primary_ipv6:type_name -> google.protobuf.StringValue
+	1,  // 2: metrics.NodeMetrics.cpu_infos:type_name -> metrics.CpuInfo
+	2,  // 3: metrics.NodeMetrics.net_usage:type_name -> metrics.NetUsage
+	3,  // 4: metrics.NodeMetrics.disk_usages:type_name -> metrics.DiskUsage
+	4,  // 5: metrics.NodeMetrics.disk_io_summary:type_name -> metrics.DiskIOSummary
+	7,  // 6: metrics.NodeMetrics.psi_cpu_metrics:type_name -> metrics.PsiMetrics
+	7,  // 7: metrics.NodeMetrics.psi_memory_metrics:type_name -> metrics.PsiMetrics
+	7,  // 8: metrics.NodeMetrics.psi_io_metrics:type_name -> metrics.PsiMetrics
+	5,  // 9: metrics.NodeMetrics.network_interfaces:type_name -> metrics.InterfaceStat
+	9,  // 10: metrics.PsiData.total:type_name -> google.protobuf.UInt64Value
+	10, // 11: metrics.PsiData.avg10:type_name -> google.protobuf.DoubleValue
+	10, // 12: metrics.PsiData.avg60:type_name -> google.protobuf.DoubleValue
+	10, // 13: metrics.PsiData.avg300:type_name -> google.protobuf.DoubleValue
+	6,  // 14: metrics.PsiMetrics.some:type_name -> metrics.PsiData
+	6,  // 15: metrics.PsiMetrics.full:type_name -> metrics.PsiData
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_proto_node_metrics_proto_init() }

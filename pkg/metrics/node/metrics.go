@@ -9,6 +9,7 @@ import (
 	"github.com/shirou/gopsutil/v3/net"
 	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"time"
 )
 
@@ -100,6 +101,17 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*
 
 		NetworkInterfaces: networkInterfaces,
 	}
+
+	ipv4, ipv6 := getPrimaryIPs(networkInterfaces)
+
+	if ipv4 != "" {
+		nodeInfo.PrimaryIpv4 = wrapperspb.String(ipv4)
+	}
+	if ipv6 != "" {
+		nodeInfo.PrimaryIpv6 = wrapperspb.String(ipv6)
+	}
+
+	logger.Info("IPs", zap.String("ipv4", ipv4), zap.String("ipv6", ipv6))
 
 	return nodeInfo, nil
 }
