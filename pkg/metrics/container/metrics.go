@@ -1,7 +1,7 @@
 package container
 
 import (
-	"gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 

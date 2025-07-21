@@ -1,8 +1,8 @@
 package node
 
 import (
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/cpu"
-	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 )
 
 func cpuInfos(cpuInfo []cpu.InfoStat, cpuPercents []float64) []*gen.CpuInfo {

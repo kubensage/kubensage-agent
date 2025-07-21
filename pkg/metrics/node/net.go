@@ -1,8 +1,8 @@
 package node
 
 import (
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/net"
-	"gitlab.com/kubensage/kubensage-agent/proto/gen"
 	"strings"
 )
 

@@ -2,7 +2,7 @@ package node
 
 import (
 	"bufio"
-	"gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"os"

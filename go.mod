@@ -1,8 +1,8 @@
-module gitlab.com/kubensage/kubensage-agent
+module github.com/kubensage/kubensage-agent
 
 go 1.24.4
 
-// replace gitlab.com/kubensage/go-common => /home/roman/gitlab/kubensage/go-common
+// replace github.com/kubensage/go-common => /home/roman/gitlab/kubensage/go-common
 
 require (
 	github.com/shirou/gopsutil/v3 v3.24.5
@@ -10,7 +10,7 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
-	k8s.io/cri-api v0.33.2
+	k8s.io/cri-api v0.33.3
 )
 
 require (
@@ -26,6 +26,6 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

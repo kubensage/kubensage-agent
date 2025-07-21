@@ -1,8 +1,8 @@
 package container
 
 import (
-	"gitlab.com/kubensage/kubensage-agent/pkg/utils"
-	"gitlab.com/kubensage/kubensage-agent/proto/gen"
+	"github.com/kubensage/kubensage-agent/pkg/utils"
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
