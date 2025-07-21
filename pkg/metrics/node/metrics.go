@@ -111,7 +111,5 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*
 		nodeInfo.PrimaryIpv6 = wrapperspb.String(ipv6)
 	}
 
-	logger.Info("IPs", zap.String("ipv4", ipv4), zap.String("ipv6", ipv6))
-
 	return nodeInfo, nil
 }
