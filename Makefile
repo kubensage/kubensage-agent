@@ -4,7 +4,7 @@ OUTPUT_DIR = build
 VERSION ?= local
 
 .PHONY: build-proto \
-		clean tidy build build-linux-amd64 build-linux-arm64 \
+		vet clean tidy build build-linux-amd64 build-linux-arm64 \
 		fresh-scp
 
 # Proto
@@ -19,11 +19,14 @@ clean:
 tidy:
 	go mod tidy
 
-build-linux-amd64: clean build-proto tidy
+vet:
+	go vet ./...
+
+build-linux-amd64: vet clean build-proto tidy
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
-build-linux-arm64: clean build-proto tidy
+build-linux-arm64: vet clean build-proto tidy
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$(VERSION)" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-arm64 cmd/kubensage-agent/main.go
 
