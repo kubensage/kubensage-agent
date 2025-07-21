@@ -1,8 +1,8 @@
 package utils
 
 import (
+	kgrpc "github.com/kubensage/go-common/grpc"
 	"github.com/kubensage/kubensage-agent/proto/gen"
-	kgrpc "gitlab.com/kubensage/go-common/grpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
