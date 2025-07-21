@@ -22,7 +22,7 @@ import (
 //
 // The function returns a populated *Metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func Metrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger) (*gen.Metrics, []error) {
+func Metrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger, topN int) (*gen.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
@@ -39,7 +39,7 @@ func Metrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger
 	go func() {
 		defer wg.Done()
 		var err error
-		nodeMetrics, err = node.Metrics(ctx, 1*time.Second, logger)
+		nodeMetrics, err = node.Metrics(ctx, 1*time.Second, logger, topN)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
 		}

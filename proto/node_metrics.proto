@@ -70,24 +70,41 @@ message NodeMetrics {
   // Aggregated network usage statistics across all network interfaces.
   NetUsage net_usage = 21;
 
+  // Top N processes consuming the most resident memory (RSS) on the node,
+  // sorted in descending order. Useful for identifying high-memory workloads.
+  repeated ProcessMemInfo processes_mem_info = 22;
+
   // Disk usage statistics for all mounted file systems on the node,
   // including capacity, free/used space, and file system type.
-  repeated DiskUsage disk_usages = 22;
+  repeated DiskUsage disk_usages = 24;
 
   // Aggregated disk I/O statistics for the entire node.
-  DiskIOSummary disk_io_summary = 23;
+  DiskIOSummary disk_io_summary = 25;
 
   // Pressure stall information for CPU-related resource contention.
-  PsiMetrics psi_cpu_metrics = 24;
+  PsiMetrics psi_cpu_metrics = 26;
 
   // Pressure stall information for memory-related resource contention.
-  PsiMetrics psi_memory_metrics = 25;
+  PsiMetrics psi_memory_metrics = 27;
 
   // Pressure stall information for I/O-related resource contention.
-  PsiMetrics psi_io_metrics = 26;
+  PsiMetrics psi_io_metrics = 28;
 
   // List of all network interfaces present on the node, including their metadata and IPs.
-  repeated InterfaceStat network_interfaces = 27;
+  repeated InterfaceStat network_interfaces = 29;
+}
+
+// ProcessMemInfo represents basic memory usage statistics for a single process.
+// Used to report the most memory-intensive processes on the node.
+message ProcessMemInfo {
+  // Process ID (PID).
+  int32 pid = 1;
+
+  // Executable name of the process.
+  string name = 2;
+
+  // Resident memory usage in bytes (RSS).
+  uint64 memory = 3;
 }
 
 // CpuInfo provides metadata and real-time usage for a single logical CPU (hardware thread).

@@ -67,7 +67,7 @@ func main() {
 	stream := openStreamWithRetry(ctx, relayClient, logger)
 
 	// Start the core metric collection loop
-	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, agentCfg.MainLoopDurationSeconds)
+	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, agentCfg.MainLoopDurationSeconds, agentCfg)
 }
 
 // openStreamWithRetry attempts to establish a streaming connection with the relay server using a retry loop.
@@ -123,6 +123,7 @@ func metricsLoop(
 	stream gen.MetricsService_SendMetricsClient,
 	sigCh <-chan os.Signal,
 	mainLoopDurationSeconds time.Duration,
+	config *agentcli.AgentConfig,
 ) {
 	ticker := time.NewTicker(mainLoopDurationSeconds)
 	defer ticker.Stop() // Ensure ticker doesn't leak if function exits
@@ -154,7 +155,7 @@ func metricsLoop(
 		case <-ticker.C:
 			// Triggered by ticker: collect and send collectedMetrics
 
-			collectedMetrics, errs := metrics.Metrics(ctx, runtimeClient, logger)
+			collectedMetrics, errs := metrics.Metrics(ctx, runtimeClient, logger, config.TopN)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {

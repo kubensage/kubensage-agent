@@ -16,7 +16,7 @@ import (
 // Metrics collects node-level system metrics using gopsutil and /proc/pressure.
 // It gathers host metadata, CPU/memory usage, PSI metrics, and network interface details.
 // Returns a NodeMetrics struct on success or an error if any critical system call fails.
-func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*gen.NodeMetrics, error) {
+func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, topN int) (*gen.NodeMetrics, error) {
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
@@ -62,6 +62,11 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*
 		return nil, err
 	}
 
+	processesMemInfo, err := topMem(ctx, topN)
+	if err != nil {
+		return nil, err
+	}
+
 	cpuInfos := cpuInfos(cpuInfo, cpuPercents)
 	netUsage := netUsage(netInfoIO[0])
 	diskUsages := diskUsages(partitions)
@@ -91,6 +96,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger) (*
 		MemoryUsedPerc:  memInfo.UsedPercent,
 
 		NetUsage: netUsage,
+
+		ProcessesMemInfo: processesMemInfo,
 
 		DiskUsages:    diskUsages,
 		DiskIoSummary: diskIoSummary,
