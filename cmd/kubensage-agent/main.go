@@ -36,7 +36,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Ensures all context-aware operations can exit cleanly
 
-	sigCh := handleSignal()
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		logger.Warn("Signal received, initiating shutdown...")
+		cancel()
+	}()
 
 	logger.Info("Discovering CRI socket")
 	criSocket, err := discovery.CriSocketDiscovery()
@@ -67,7 +73,7 @@ func main() {
 	stream := openStreamWithRetry(ctx, relayClient, logger)
 
 	// Start the core metric collection loop
-	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, agentCfg.MainLoopDurationSeconds, agentCfg)
+	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, agentCfg.MainLoopDurationSeconds, agentCfg)
 }
 
 // openStreamWithRetry attempts to establish a streaming connection with the relay server using a retry loop.
@@ -109,80 +115,90 @@ func openStreamWithRetry(
 	}
 }
 
-// metricsLoop runs the main operational loop of the agent.
-// At each interval:
-// - It collects CRI-based metrics concurrently
-// - Converts them into protobuf format
-// - Sends them via GRPC to the relay server
-// It also handles reconnection on stream failure and responds to shut down signals.
+// metricsLoop runs the main operational loop of the kubensage agent.
+//
+// At each interval (defined by mainLoopDurationSeconds), it:
+//   - Collects CRI-based metrics concurrently from the container runtime
+//   - Converts them into protobuf format
+//   - Sends them via gRPC to the relay server
+//
+// It handles:
+//   - Stream send failures with automatic reconnection and retry
+//   - Graceful shutdown via context cancellation (e.g. SIGINT/SIGTERM)
+//
+// This function blocks until the context is cancelled.
 func metricsLoop(
 	ctx context.Context,
 	logger *zap.Logger,
 	runtimeClient cri.RuntimeServiceClient,
 	relayClient gen.MetricsServiceClient,
 	stream gen.MetricsService_SendMetricsClient,
-	sigCh <-chan os.Signal,
 	mainLoopDurationSeconds time.Duration,
 	config *agentcli.AgentConfig,
 ) {
 	ticker := time.NewTicker(mainLoopDurationSeconds)
-	defer ticker.Stop() // Ensure ticker doesn't leak if function exits
+	defer ticker.Stop()
+
+	bufferSize := computeBufferSize(config.MainLoopDurationSeconds, config.BufferRetention)
+	buffer := metrics.NewMetricsRingBuffer(bufferSize)
+	logger.Info("Ring Buffer size", zap.Int("size", bufferSize))
 
 	for {
 		select {
-		case <-sigCh:
-			// Signal received: close the stream and exit
-			_, err := stream.CloseAndRecv()
-			if err != nil {
-				logger.Error("Failed to receive ack", zap.Error(err))
-			} else {
-				logger.Info("Relay server acknowledged")
-			}
-			logger.Warn("Termination signal received, exiting")
-			return
-
 		case <-ctx.Done():
-			// Context cancelled externally: close the stream and exit
-			_, err := stream.CloseAndRecv()
-			if err != nil {
-				logger.Error("Failed to receive ack on context cancel", zap.Error(err))
+			logger.Info("Context cancelled, cleaning up and exiting")
+
+			if _, err := stream.CloseAndRecv(); err != nil {
+				logger.Error("Failed to receive ack on shutdown", zap.Error(err))
 			} else {
-				logger.Info("Relay server acknowledged on cancel")
+				logger.Info("Relay server acknowledged on shutdown")
 			}
-			logger.Info("Context cancelled, exiting")
 			return
 
 		case <-ticker.C:
-			// Triggered by ticker: collect and send collectedMetrics
-
+			// Collect CRI metrics from runtime
 			collectedMetrics, errs := metrics.Metrics(ctx, runtimeClient, logger, config.TopN)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {
 					errStrs = append(errStrs, e.Error())
 				}
-				logger.Error("Failed to get collectedMetrics", zap.Strings("errors", errStrs))
+				logger.Error("Failed to collect metrics", zap.Strings("errors", errStrs))
 				continue
 			}
 
-			logger.Info("Number of discovered pods", zap.Int("n_of_discovered_pods", len(collectedMetrics.PodMetrics)))
-			logger.Debug("Metrics", zap.Any("collectedMetrics", collectedMetrics))
+			// Flush the buffer if not empty
+			if buffer.Len() > 0 {
+				logger.Info("Flushing buffered metrics", zap.Int("count", buffer.Len()))
+				for buffer.Len() > 0 {
+					m := buffer.Pop()
+					if err := stream.Send(m); err != nil {
+						logger.Warn("Failed to flush buffered metric", zap.Error(err))
+						buffer.Add(m) // requeue the one that failed
+						break
+					}
+					logger.Info("Flushed one buffered metric")
+				}
+			}
 
-			// Attempt to send collectedMetrics; on failure, reconnect and retry once
+			logger.Info("Number of discovered pods", zap.Int("n_of_discovered_pods", len(collectedMetrics.PodMetrics)))
+			logger.Debug("Collected metrics", zap.Any("collectedMetrics", collectedMetrics))
+
+			// Attempt to send metrics; if stream is broken, reconnect and retry once
 			if err := stream.Send(collectedMetrics); err != nil {
 				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
 
-				_ = stream.CloseSend() // Ensure we explicitly close the failed stream
-
+				_ = stream.CloseSend()
 				stream = openStreamWithRetry(ctx, relayClient, logger)
-				logger.Info("Reconnected to stream successfully")
-
-				err2 := stream.Send(collectedMetrics)
-				if err2 != nil {
-					logger.Error("Send after reconnect failed", zap.Error(err2))
-					continue
+				if stream == nil {
+					logger.Error("Stream is nil after reconnect, saving metrics to buffer")
 				}
 
+				if err2 := stream.Send(collectedMetrics); err2 != nil {
+					buffer.Add(collectedMetrics)
+					logger.Info("Saved current metrics to buffer", zap.Int("buffer_size", buffer.Len()))
+					continue
+				}
 				logger.Info("Send after reconnect succeeded")
 			} else {
 				logger.Info("Metrics sent successfully")
@@ -191,8 +207,10 @@ func metricsLoop(
 	}
 }
 
-func handleSignal() <-chan os.Signal {
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	return sigCh
+func computeBufferSize(loopInterval time.Duration, retentionMinutes time.Duration) int {
+	size := int(retentionMinutes / loopInterval)
+	if size < 1 {
+		return 1
+	}
+	return size
 }

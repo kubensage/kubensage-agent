@@ -66,7 +66,9 @@ type NodeMetrics struct {
 	// Percentage of memory used (used / total * 100).
 	MemoryUsedPerc float64 `protobuf:"fixed64,20,opt,name=memory_used_perc,json=memoryUsedPerc,proto3" json:"memory_used_perc,omitempty"`
 	// Aggregated network usage statistics across all network interfaces.
-	NetUsage         *NetUsage         `protobuf:"bytes,21,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
+	NetUsage *NetUsage `protobuf:"bytes,21,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
+	// Top N processes consuming the most resident memory (RSS) on the node,
+	// sorted in descending order. Useful for identifying high-memory workloads.
 	ProcessesMemInfo []*ProcessMemInfo `protobuf:"bytes,22,rep,name=processes_mem_info,json=processesMemInfo,proto3" json:"processes_mem_info,omitempty"`
 	// Disk usage statistics for all mounted file systems on the node,
 	// including capacity, free/used space, and file system type.
@@ -304,11 +306,16 @@ func (x *NodeMetrics) GetNetworkInterfaces() []*InterfaceStat {
 	return nil
 }
 
+// ProcessMemInfo represents basic memory usage statistics for a single process.
+// Used to report the most memory-intensive processes on the node.
 type ProcessMemInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pid           int32                  `protobuf:"varint,1,opt,name=pid,proto3" json:"pid,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Memory        uint64                 `protobuf:"varint,3,opt,name=memory,proto3" json:"memory,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Process ID (PID).
+	Pid int32 `protobuf:"varint,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	// Executable name of the process.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Resident memory usage in bytes (RSS).
+	Memory        uint64 `protobuf:"varint,3,opt,name=memory,proto3" json:"memory,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
