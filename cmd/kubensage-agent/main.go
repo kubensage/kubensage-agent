@@ -1,8 +1,17 @@
+// Package main implements the entry point for the kubensage-agent.
+// It connects to the CRI (Container Runtime Interface), collects container metrics periodically,
+// and streams them to a remote relay service over gRPC.
 package main
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	commoncli "github.com/kubensage/go-common/cli"
 	"github.com/kubensage/go-common/log"
 	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
@@ -10,189 +19,198 @@ import (
 	"github.com/kubensage/kubensage-agent/pkg/metrics"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
+
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 const appName = "kubensage-agent"
 
 func main() {
-	logCfgFn := commoncli.RegisterLogStdAndFileFlags(flag.CommandLine, appName)
-	agentCfgFn := agentcli.RegisterAgentFlags(flag.CommandLine)
-
+	logCfgLoader := commoncli.RegisterLogStdAndFileFlags(flag.CommandLine, appName)
+	agentCfgLoader := agentcli.RegisterAgentFlags(flag.CommandLine)
 	flag.Parse()
 
-	logCfg := logCfgFn()
+	logCfg := logCfgLoader()
 	logger := log.SetupStdAndFileLogger(logCfg)
-	agentCfg := agentCfgFn(logger)
+	defer logger.Sync()
 
+	agentCfg := agentCfgLoader(logger)
 	log.LogStartupInfo(logger, appName, logCfg, agentCfg)
 
+	logger.Info("Connecting to relay", zap.String("relay_address", agentCfg.RelayAddress))
+
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensures all context-aware operations can exit cleanly
+	defer cancel()
 
-	sigCh := handleSignal()
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		logger.Warn("Shutdown signal received")
+		cancel()
+	}()
 
-	logger.Info("Discovering CRI socket")
+	logger.Info("Discovering CRI socket...")
 	criSocket, err := discovery.CriSocketDiscovery()
 	if err != nil {
-		logger.Fatal("Failed to discover CRI socket", zap.Error(err))
+		logger.Fatal("CRI socket discovery failed", zap.Error(err))
 	}
-	logger.Info("Discovered CRI socket", zap.String("socket", criSocket))
+	logger.Info("CRI socket discovered", zap.String("socket", criSocket))
 
-	// Connect to CRI and defer cleanup of connection
 	runtimeClient, criConn := utils.SetupCRIConnection(criSocket, logger)
-	defer func(criConn *grpc.ClientConn) {
-		err := criConn.Close()
-		if err != nil {
-			logger.Warn("Failed to close CRI connection", zap.Error(err))
-		}
-	}(criConn)
+	defer func() {
+		logger.Info("Closing CRI connection")
+		_ = criConn.Close()
+	}()
 
-	// Connect to relay and defer cleanup of connection
 	relayClient, relayConn := utils.SetupRelayConnection(agentCfg.RelayAddress, logger)
-	defer func(relayConn *grpc.ClientConn) {
-		err := relayConn.Close()
-		if err != nil {
-			logger.Warn("Failed to close relay connection", zap.Error(err))
-		}
-	}(relayConn)
+	defer func() {
+		logger.Info("Closing relay connection")
+		_ = relayConn.Close()
+	}()
 
-	logger.Info("Opening initial stream channel")
-	stream := openStreamWithRetry(ctx, relayClient, logger)
+	bufferSize := computeBufferSize(agentCfg.MainLoopDurationSeconds, agentCfg.BufferRetention)
+	buffer := utils.NewMetricsRingBuffer(bufferSize)
+	logger.Info("Metrics ring buffer initialized", zap.Int("buffer_size", bufferSize))
 
-	// Start the core metric collection loop
-	metricsLoop(ctx, logger, runtimeClient, relayClient, stream, sigCh, agentCfg.MainLoopDurationSeconds, agentCfg)
+	// SCOPED loggers
+	collectorLogger := logger.Named("collector")
+	senderLogger := logger.Named("sender")
+
+	go collectionLoop(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
+	sendingLoop(ctx, relayClient, buffer, agentCfg, senderLogger)
 }
 
-// openStreamWithRetry attempts to establish a streaming connection with the relay server using a retry loop.
-// It implements an exponential backoff strategy:
-// - Starts with a 1-second wait between retries.
-// - On each failure, the wait time doubles (1s → 2s → 4s → 8s, etc.).
-// - The backoff duration is capped at 30 seconds to prevent excessively long delays.
-// - If the context is cancelled (e.g., due to shut down), the function logs and returns nil.
-// This mechanism helps reduce pressure on the relay server during outages or instability.
-func openStreamWithRetry(
+func collectionLoop(
 	ctx context.Context,
-	client gen.MetricsServiceClient,
-	logger *zap.Logger,
-) gen.MetricsService_SendMetricsClient {
-
-	backoff := time.Second
-
-	for {
-		logger.Info("Opening stream to relay server...")
-		stream, err := client.SendMetrics(ctx)
-		if err == nil {
-			logger.Info("Stream opened successfully")
-			return stream
-		}
-		logger.Error("Failed to open stream, retrying...", zap.Error(err))
-
-		select {
-		case <-ctx.Done():
-			// If the context is cancelled externally (e.g. SIGTERM or shutdown), stop retrying
-			logger.Warn("Context cancelled during stream reconnect")
-			return nil
-		case <-time.After(backoff):
-			// Wait for the current backoff duration before retrying
-		}
-
-		if backoff < 30*time.Second {
-			backoff *= 2
-		}
-	}
-}
-
-// metricsLoop runs the main operational loop of the agent.
-// At each interval:
-// - It collects CRI-based metrics concurrently
-// - Converts them into protobuf format
-// - Sends them via GRPC to the relay server
-// It also handles reconnection on stream failure and responds to shut down signals.
-func metricsLoop(
-	ctx context.Context,
-	logger *zap.Logger,
 	runtimeClient cri.RuntimeServiceClient,
-	relayClient gen.MetricsServiceClient,
-	stream gen.MetricsService_SendMetricsClient,
-	sigCh <-chan os.Signal,
-	mainLoopDurationSeconds time.Duration,
-	config *agentcli.AgentConfig,
+	buffer *utils.RingBuffer,
+	agentCfg *agentcli.AgentConfig,
+	logger *zap.Logger,
 ) {
-	ticker := time.NewTicker(mainLoopDurationSeconds)
-	defer ticker.Stop() // Ensure ticker doesn't leak if function exits
+	logger.Info("Starting metrics collection", zap.Duration("interval", agentCfg.MainLoopDurationSeconds))
+
+	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
+	defer ticker.Stop()
 
 	for {
 		select {
-		case <-sigCh:
-			// Signal received: close the stream and exit
-			_, err := stream.CloseAndRecv()
-			if err != nil {
-				logger.Error("Failed to receive ack", zap.Error(err))
-			} else {
-				logger.Info("Relay server acknowledged")
-			}
-			logger.Warn("Termination signal received, exiting")
-			return
-
 		case <-ctx.Done():
-			// Context cancelled externally: close the stream and exit
-			_, err := stream.CloseAndRecv()
-			if err != nil {
-				logger.Error("Failed to receive ack on context cancel", zap.Error(err))
-			} else {
-				logger.Info("Relay server acknowledged on cancel")
-			}
-			logger.Info("Context cancelled, exiting")
+			logger.Info("Stopping metrics collection")
 			return
 
 		case <-ticker.C:
-			// Triggered by ticker: collect and send collectedMetrics
-
-			collectedMetrics, errs := metrics.Metrics(ctx, runtimeClient, logger, config.TopN)
+			logger.Debug("Collecting metrics")
+			metricsData, errs := metrics.Metrics(ctx, runtimeClient, logger, agentCfg.TopN)
 			if errs != nil {
 				var errStrs []string
 				for _, e := range errs {
 					errStrs = append(errStrs, e.Error())
 				}
-				logger.Error("Failed to get collectedMetrics", zap.Strings("errors", errStrs))
+				logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
 				continue
 			}
+			buffer.Add(metricsData)
+			logger.Debug("Metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+		}
+	}
+}
 
-			logger.Info("Number of discovered pods", zap.Int("n_of_discovered_pods", len(collectedMetrics.PodMetrics)))
-			logger.Debug("Metrics", zap.Any("collectedMetrics", collectedMetrics))
+func sendingLoop(
+	ctx context.Context,
+	relayClient gen.MetricsServiceClient,
+	buffer *utils.RingBuffer,
+	agentCfg *agentcli.AgentConfig,
+	logger *zap.Logger,
+) {
+	logger.Info("Starting metrics sending", zap.Duration("interval", agentCfg.MainLoopDurationSeconds))
 
-			// Attempt to send collectedMetrics; on failure, reconnect and retry once
-			if err := stream.Send(collectedMetrics); err != nil {
-				logger.Warn("Stream send failed. Attempting to reconnect...", zap.Error(err))
+	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
+	defer ticker.Stop()
 
-				_ = stream.CloseSend() // Ensure we explicitly close the failed stream
+	var stream gen.MetricsService_SendMetricsClient
+	var err error
 
-				stream = openStreamWithRetry(ctx, relayClient, logger)
-				logger.Info("Reconnected to stream successfully")
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopping metrics sending")
+			if stream != nil {
+				if err := stream.CloseSend(); err != nil {
+					logger.Warn("Error closing stream", zap.Error(err))
+				} else {
+					logger.Info("Stream closed")
+				}
+			}
+			return
 
-				err2 := stream.Send(collectedMetrics)
-				if err2 != nil {
-					logger.Error("Send after reconnect failed", zap.Error(err2))
+		case <-ticker.C:
+			if stream == nil {
+				logger.Debug("Opening metrics stream")
+				stream, err = relayClient.SendMetrics(ctx)
+				if err != nil {
+					logger.Warn("Unable to open stream", zap.Error(err))
+					time.Sleep(2 * time.Second)
 					continue
 				}
+				logger.Info("Stream opened successfully")
 
-				logger.Info("Send after reconnect succeeded")
-			} else {
-				logger.Info("Metrics sent successfully")
+				if err := sendAllBuffer(buffer, stream, logger); err != nil {
+					logger.Error("Failed to send buffered metrics", zap.Error(err))
+					stream = nil
+					continue
+				}
+			}
+
+			if err := popAndSend(buffer, stream, logger); err != nil {
+				logger.Error("Metric send failed", zap.Error(err))
+				stream = nil
 			}
 		}
 	}
 }
 
-func handleSignal() <-chan os.Signal {
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	return sigCh
+func sendAllBuffer(buffer *utils.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
+	logger.Debug("Sending all buffered metrics")
+
+	for buffer.Len() > 0 {
+		if err := popAndSend(buffer, stream, logger); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func popAndSend(buffer *utils.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
+	if buffer == nil {
+		return errors.New("buffer is nil")
+	}
+	if buffer.Len() == 0 {
+		logger.Debug("Buffer empty")
+		return nil
+	}
+
+	pop := buffer.Pop()
+	err := stream.Send(pop)
+	if err != nil {
+		logger.Error("Stream send failed", zap.Error(err))
+		buffer.Readd(pop)
+		logger.Debug("Metric re-queued", zap.Int("buffer_len", buffer.Len()))
+		return err
+	}
+
+	logger.Debug("Metric sent", zap.Int("buffer_len", buffer.Len()))
+	return nil
+}
+
+func computeBufferSize(loopInterval time.Duration, retentionDuration time.Duration) int {
+	if loopInterval <= 0 {
+		return 1
+	}
+	size := int(retentionDuration / loopInterval)
+	if size < 1 {
+		return 1
+	}
+	return size
 }
