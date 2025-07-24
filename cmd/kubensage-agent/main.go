@@ -71,7 +71,7 @@ func main() {
 	}()
 
 	bufferSize := computeBufferSize(agentCfg.MainLoopDurationSeconds, agentCfg.BufferRetention)
-	buffer := metrics.NewMetricsRingBuffer(bufferSize)
+	buffer := utils.NewMetricsRingBuffer(bufferSize)
 	logger.Info("Metrics ring buffer initialized", zap.Int("buffer_size", bufferSize))
 
 	// SCOPED loggers
@@ -85,7 +85,7 @@ func main() {
 func collectionLoop(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
-	buffer *metrics.RingBuffer,
+	buffer *utils.RingBuffer,
 	agentCfg *agentcli.AgentConfig,
 	logger *zap.Logger,
 ) {
@@ -120,7 +120,7 @@ func collectionLoop(
 func sendingLoop(
 	ctx context.Context,
 	relayClient gen.MetricsServiceClient,
-	buffer *metrics.RingBuffer,
+	buffer *utils.RingBuffer,
 	agentCfg *agentcli.AgentConfig,
 	logger *zap.Logger,
 ) {
@@ -171,7 +171,7 @@ func sendingLoop(
 	}
 }
 
-func sendAllBuffer(buffer *metrics.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
+func sendAllBuffer(buffer *utils.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
 	logger.Debug("Sending all buffered metrics")
 
 	for buffer.Len() > 0 {
@@ -182,7 +182,7 @@ func sendAllBuffer(buffer *metrics.RingBuffer, stream gen.MetricsService_SendMet
 	return nil
 }
 
-func popAndSend(buffer *metrics.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
+func popAndSend(buffer *utils.RingBuffer, stream gen.MetricsService_SendMetricsClient, logger *zap.Logger) error {
 	if buffer == nil {
 		return errors.New("buffer is nil")
 	}

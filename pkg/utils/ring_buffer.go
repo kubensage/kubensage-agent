@@ -1,4 +1,4 @@
-package metrics
+package utils
 
 import "github.com/kubensage/kubensage-agent/proto/gen"
 
