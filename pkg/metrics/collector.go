@@ -3,9 +3,11 @@ package metrics
 import (
 	"context"
 	"fmt"
+	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/container"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/node"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/pod"
+	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -13,16 +15,51 @@ import (
 	"time"
 )
 
-// Metrics collects both node-level and pod-level metrics from the container runtime API (CRI).
+func CollectionLoop(
+	ctx context.Context,
+	runtimeClient cri.RuntimeServiceClient,
+	buffer *utils.RingBuffer,
+	agentCfg *agentcli.AgentConfig,
+	logger *zap.Logger,
+) {
+	logger.Info("Starting metrics collection", zap.Duration("interval", agentCfg.MainLoopDurationSeconds))
+
+	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopping metrics collection")
+			return
+
+		case <-ticker.C:
+			logger.Debug("Collecting metrics")
+			metricsData, errs := collectMetrics(ctx, runtimeClient, logger, agentCfg.TopN)
+			if errs != nil {
+				var errStrs []string
+				for _, e := range errs {
+					errStrs = append(errStrs, e.Error())
+				}
+				logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
+				continue
+			}
+			buffer.Add(metricsData)
+			logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+		}
+	}
+}
+
+// collectMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
 // The collection process is parallelized across four sources:
 // - Node metrics (CPU, memory, PSI, etc.)
 // - Pod sandboxes
 // - Containers
 // - Container stats
 //
-// The function returns a populated *Metrics object and a slice of errors that occurred during collection.
+// The function returns a populated *metrics object and a slice of errors that occurred during collection.
 // Partial failures (e.g., missing stats for a container) do not block the overall process.
-func Metrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger, topN int) (*gen.Metrics, []error) {
+func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger, topN int) (*gen.Metrics, []error) {
 	var wg sync.WaitGroup
 
 	// Error channel for concurrent metric collection
