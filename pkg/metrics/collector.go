@@ -15,6 +15,24 @@ import (
 	"time"
 )
 
+// CollectionLoop starts a continuous loop that periodically collects node and pod
+// metrics from the container runtime using the CRI client. The collected metrics
+// are pushed into a shared ring buffer for later processing and transmission
+// via the SendingLoop.
+//
+// Parameters:
+// - ctx: Context used to control the lifecycle of the loop (cancellation, shutdown).
+// - runtimeClient: CRI client used to retrieve pod, container, and stats data.
+// - buffer: A ring buffer that stores collected metrics before they're sent.
+// - agentCfg: Agent configuration that defines the collection interval and limits.
+// - logger: Zap logger for debug and error logging.
+//
+// Behavior:
+// - A ticker triggers metric collection at the configured interval.
+// - On each tick, collectMetrics() gathers node and pod/container metrics.
+// - Collected data is added to the ring buffer if successful.
+// - Partial errors are logged but do not interrupt the loop.
+// - The loop exits gracefully when the context is cancelled.
 func CollectionLoop(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
