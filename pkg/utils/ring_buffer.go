@@ -2,11 +2,14 @@ package utils
 
 import "github.com/kubensage/kubensage-agent/proto/gen"
 
+import "sync"
+
 type RingBuffer struct {
 	data     []*gen.Metrics
 	capacity int
 	start    int
 	size     int
+	mu       sync.Mutex
 }
 
 // NewMetricsRingBuffer creates and returns a new RingBuffer with the specified capacity.
@@ -22,6 +25,9 @@ func NewMetricsRingBuffer(cap int) *RingBuffer {
 // Add inserts a new *gen.Metrics item into the ring buffer.
 // If the buffer is full, it overwrites the oldest entry.
 func (b *RingBuffer) Add(m *gen.Metrics) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	idx := (b.start + b.size) % b.capacity
 	b.data[idx] = m
 	if b.size < b.capacity {
@@ -34,6 +40,9 @@ func (b *RingBuffer) Add(m *gen.Metrics) {
 // Pop removes and returns the oldest *gen.Metrics item from the buffer.
 // If the buffer is empty, it returns nil.
 func (b *RingBuffer) Pop() *gen.Metrics {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	if b.size == 0 {
 		return nil
 	}
@@ -49,6 +58,9 @@ func (b *RingBuffer) Pop() *gen.Metrics {
 //
 // Returns true if the operation is successful, or false if the buffer is full.
 func (b *RingBuffer) Readd(m *gen.Metrics) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	if b.size == b.capacity {
 		return false // buffer is full, cannot reinsert
 	}
