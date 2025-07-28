@@ -15,7 +15,7 @@ type AgentConfig struct {
 
 func RegisterAgentFlags(fs *flag.FlagSet) func(logger *zap.Logger) *AgentConfig {
 	relayAddress := fs.String("relay-address", "", "Relay address (required)")
-	mainLoopDuration := fs.Int("main-loop-duration", 5, "Main loop duration in seconds")
+	mainLoopDuration := fs.Int("main-loop-duration", 5, "Main loop duration in milliseconds")
 	bufferRetention := fs.Int("buffer-retention", 10, "Buffer retention in minutes")
 	topN := fs.Int("top-n", 10, "Top N processes")
 
@@ -26,7 +26,7 @@ func RegisterAgentFlags(fs *flag.FlagSet) func(logger *zap.Logger) *AgentConfig 
 
 		return &AgentConfig{
 			RelayAddress:            *relayAddress,
-			MainLoopDurationSeconds: time.Duration(*mainLoopDuration) * time.Second,
+			MainLoopDurationSeconds: time.Duration(*mainLoopDuration) * time.Millisecond,
 			BufferRetention:         time.Duration(*bufferRetention) * time.Minute,
 			TopN:                    *topN,
 		}
