@@ -20,7 +20,7 @@ import (
 func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, topN int) (*gen.NodeMetrics, []error) {
 	logger.Debug("Start to collect metrics")
 
-	routines := 19 // Must match the total number of goroutines present below
+	routines := 13 // Must match the total number of goroutines present below
 	var wg sync.WaitGroup
 	errChan := make(chan error, routines)
 	wg.Add(routines)
@@ -52,11 +52,14 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 
 	// 3
 	var cpuPercents []float64
+	var _cpuInfos []*gen.CpuInfo
 	go func() {
 		logger.Debug("Start cpu.PercentWithContext")
 		cpuPercents, err = cpu.PercentWithContext(ctx, interval, true) // <-- true = per-core
 		if err != nil {
 			errChan <- err
+		} else {
+			_cpuInfos = cpuInfos(cpuInfo, cpuPercents, logger)
 		}
 		logger.Debug("Finish cpu.PercentWithContext")
 	}()
@@ -85,49 +88,47 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 
 	// 6
 	var netInfoIO []net.IOCountersStat
+	var _netUsage *gen.NetUsage
 	go func() {
 		logger.Debug("Start net.IOCountersWithContext")
 		netInfoIO, err = net.IOCountersWithContext(ctx, false)
 		if err != nil {
 			errChan <- err
+		} else {
+			_netUsage = netUsage(netInfoIO[0], logger)
 		}
 		logger.Debug("Finish net.IOCountersWithContext")
 	}()
 
 	// 7
 	var counters map[string]disk.IOCountersStat
+	var _diskIoSummary *gen.DiskIOSummary
 	go func() {
 		logger.Debug("Start disk.IOCountersWithContext")
 		counters, err = disk.IOCountersWithContext(ctx)
 		if err != nil {
 			errChan <- err
+		} else {
+			_diskIoSummary = diskIOSummary(counters, logger)
 		}
 		logger.Debug("Finish disk.IOCountersWithContext")
 	}()
 
 	// 8
 	var partitions []disk.PartitionStat
+	var _diskUsages []*gen.DiskUsage
 	go func() {
 		logger.Debug("Start disk.PartitionsWithContext")
 		partitions, err = disk.PartitionsWithContext(ctx, true)
 		if err != nil {
 			errChan <- err
+		} else {
+			_diskUsages = diskUsages(partitions, logger)
 		}
 		logger.Debug("Finish disk.PartitionsWithContext")
 	}()
 
 	// 9
-	var interfaces []net.InterfaceStat
-	go func() {
-		logger.Debug("Start net.InterfacesWithContext")
-		interfaces, err = net.InterfacesWithContext(ctx)
-		if err != nil {
-			errChan <- err
-		}
-		logger.Debug("Finish net.InterfacesWithContext")
-	}()
-
-	// 10
 	var processesMemInfo []*gen.ProcessMemInfo
 	go func() {
 		logger.Debug("Start ")
@@ -138,54 +139,34 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 		logger.Debug("Finish ")
 	}()
 
-	// 11
-	var _cpuInfos []*gen.CpuInfo
-	go func() {
-		_cpuInfos = cpuInfos(cpuInfo, cpuPercents, logger)
-	}()
-
-	// 12
-	var _netUsage *gen.NetUsage
-	go func() {
-		_netUsage = netUsage(netInfoIO[0], logger)
-	}()
-
-	// 13
-	var _diskUsages []*gen.DiskUsage
-	go func() {
-		_diskUsages = diskUsages(partitions, logger)
-	}()
-
-	//14
-	var _diskIoSummary *gen.DiskIOSummary
-	go func() {
-		_diskIoSummary = diskIOSummary(counters, logger)
-	}()
-
-	//15
+	// 10
+	var interfaces []net.InterfaceStat
 	var _networkInterfaces []*gen.InterfaceStat
-	go func() {
-		_networkInterfaces = networkInterfaces(interfaces, logger)
-	}()
-
-	// 16
 	var ipv4, ipv6 string
 	go func() {
+		logger.Debug("Start net.InterfacesWithContext")
+		interfaces, err = net.InterfacesWithContext(ctx)
+		if err != nil {
+			errChan <- err
+		}
+
+		_networkInterfaces = networkInterfaces(interfaces, logger)
 		ipv4, ipv6 = getPrimaryIPs(_networkInterfaces, logger)
+		logger.Debug("Finish net.InterfacesWithContext")
 	}()
 
-	// 17
+	// 11
 	var cpuPsi, memPsi, ioPsi *gen.PsiMetrics
 	go func() {
 		cpuPsi = psiMetrics("/proc/pressure/cpu", logger)
 	}()
 
-	// 18
+	// 12
 	go func() {
 		memPsi = psiMetrics("/proc/pressure/memory", logger)
 	}()
 
-	// 19
+	// 13
 	go func() {
 		ioPsi = psiMetrics("/proc/pressure/io", logger)
 	}()
