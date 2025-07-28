@@ -79,36 +79,36 @@ func main() {
 	collectorLogger := logger.Named("collector")
 	senderLogger := logger.Named("sender")
 
-	go func() {
-		ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
-		defer ticker.Stop()
+	//go func() {
+	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
+	defer ticker.Stop()
 
-		stream, err := relayClient.SendMetrics(ctx)
-		if err != nil {
-			logger.Error("failed to send metrics", zap.Error(err))
-		} else {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					errors := metrics.CollectOnce(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
+	stream, err := relayClient.SendMetrics(ctx)
+	if err != nil {
+		logger.Error("failed to send metrics", zap.Error(err))
+	}
 
-					if errors != nil {
-						logger.Error("Errors while collecting metrics", zap.Any("errors", errors))
-						return
-					}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			errors := metrics.CollectOnce(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
 
-					err := metrics.SendOnce(ctx, relayClient, stream, buffer, senderLogger)
-					if err != nil {
-						logger.Error("Error while sending metrics", zap.Error(err))
-						return
-					}
-				}
+			if errors != nil {
+				logger.Error("Errors while collecting metrics", zap.Any("errors", errors))
+				continue
+			}
+
+			err := metrics.SendOnce(ctx, relayClient, stream, buffer, senderLogger)
+			if err != nil {
+				logger.Error("Error while sending metrics", zap.Error(err))
+				continue
 			}
 		}
+	}
 
-	}()
+	//}()
 }
 
 func computeBufferSize(loopInterval time.Duration, retentionDuration time.Duration) int {
