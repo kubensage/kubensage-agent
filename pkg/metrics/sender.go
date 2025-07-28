@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"errors"
+	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
@@ -31,6 +32,7 @@ func SendOnce(
 	relayClient gen.MetricsServiceClient,
 	stream gen.MetricsService_SendMetricsClient,
 	buffer *utils.RingBuffer,
+	agentCfg *agentcli.AgentConfig,
 	logger *zap.Logger,
 ) error {
 	var err error
@@ -40,7 +42,7 @@ func SendOnce(
 		stream, err = relayClient.SendMetrics(ctx)
 		if err != nil {
 			logger.Warn("Unable to open stream", zap.Error(err))
-			time.Sleep(2 * time.Second)
+			time.Sleep(agentCfg.MainLoopDurationSeconds)
 			return err
 		}
 		logger.Info("Stream opened successfully")

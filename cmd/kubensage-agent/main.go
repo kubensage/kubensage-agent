@@ -100,7 +100,7 @@ func main() {
 				continue
 			}
 
-			err := metrics.SendOnce(ctx, relayClient, stream, buffer, senderLogger)
+			err := metrics.SendOnce(ctx, relayClient, stream, buffer, agentCfg, senderLogger)
 			if err != nil {
 				logger.Error("Error while sending metrics", zap.Error(err))
 				continue
