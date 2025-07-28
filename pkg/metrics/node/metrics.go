@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -20,179 +21,150 @@ import (
 func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, topN int) (*gen.NodeMetrics, []error) {
 	logger.Debug("Start to collect metrics")
 
-	routines := 13 // Must match the total number of goroutines present below
 	var wg sync.WaitGroup
-	errChan := make(chan error, routines)
-	wg.Add(routines)
+	var errs []error
 
-	// 1
 	var info *host.InfoStat
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start host.InfoWithContext")
 		info, err = host.InfoWithContext(ctx)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 		logger.Debug("Finish host.InfoWithContext")
-	}()
+	})
 
-	// 2
 	var cpuInfo []cpu.InfoStat
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start cpu.InfoWithContext")
 		cpuInfo, err = cpu.InfoWithContext(ctx)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 		logger.Debug("Finish cpu.InfoWithContext")
-	}()
+	})
 
-	// 3
 	var cpuPercents []float64
 	var _cpuInfos []*gen.CpuInfo
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start cpu.PercentWithContext")
 		cpuPercents, err = cpu.PercentWithContext(ctx, interval, true) // <-- true = per-core
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		} else {
 			_cpuInfos = cpuInfos(cpuInfo, cpuPercents, logger)
 		}
 		logger.Debug("Finish cpu.PercentWithContext")
-	}()
+	})
 
-	// 4
 	var totalCpuPercent []float64
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start cpu.PercentWithContext")
 		totalCpuPercent, err = cpu.PercentWithContext(ctx, interval, false) // <-- true = per-core
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 		logger.Debug("Finish cpu.PercentWithContext")
-	}()
+	})
 
-	// 5
 	var memInfo *mem.VirtualMemoryStat
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start mem.VirtualMemoryWithContext")
 		memInfo, err = mem.VirtualMemoryWithContext(ctx)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 		logger.Debug("Finish mem.VirtualMemoryWithContext")
-	}()
+	})
 
-	// 6
 	var netInfoIO []net.IOCountersStat
 	var _netUsage *gen.NetUsage
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start net.IOCountersWithContext")
 		netInfoIO, err = net.IOCountersWithContext(ctx, false)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		} else {
 			_netUsage = netUsage(netInfoIO[0], logger)
 		}
 		logger.Debug("Finish net.IOCountersWithContext")
-	}()
+	})
 
-	// 7
 	var counters map[string]disk.IOCountersStat
 	var _diskIoSummary *gen.DiskIOSummary
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start disk.IOCountersWithContext")
 		counters, err = disk.IOCountersWithContext(ctx)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		} else {
 			_diskIoSummary = diskIOSummary(counters, logger)
 		}
 		logger.Debug("Finish disk.IOCountersWithContext")
-	}()
+	})
 
-	// 8
 	var partitions []disk.PartitionStat
 	var _diskUsages []*gen.DiskUsage
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start disk.PartitionsWithContext")
 		partitions, err = disk.PartitionsWithContext(ctx, true)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		} else {
 			_diskUsages = diskUsages(partitions, logger)
 		}
 		logger.Debug("Finish disk.PartitionsWithContext")
-	}()
+	})
 
-	// 9
 	var processesMemInfo []*gen.ProcessMemInfo
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start ")
 		processesMemInfo, err = topMem(ctx, topN, logger)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 		logger.Debug("Finish ")
-	}()
+	})
 
-	// 10
 	var interfaces []net.InterfaceStat
 	var _networkInterfaces []*gen.InterfaceStat
 	var ipv4, ipv6 string
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		var err error
 		logger.Debug("Start net.InterfacesWithContext")
 		interfaces, err = net.InterfacesWithContext(ctx)
 		if err != nil {
-			errChan <- err
+			errs = append(errs, err)
 		}
 
 		_networkInterfaces = networkInterfaces(interfaces, logger)
 		ipv4, ipv6 = getPrimaryIPs(_networkInterfaces, logger)
 		logger.Debug("Finish net.InterfacesWithContext")
-	}()
+	})
 
-	// 11
 	var cpuPsi, memPsi, ioPsi *gen.PsiMetrics
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		cpuPsi = psiMetrics("/proc/pressure/cpu", logger)
-	}()
+	})
 
-	// 12
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		memPsi = psiMetrics("/proc/pressure/memory", logger)
-	}()
+	})
 
-	// 13
-	go func() {
-		defer wg.Done()
+	utils.SafeGo(&wg, func() {
 		ioPsi = psiMetrics("/proc/pressure/io", logger)
-	}()
+	})
 
 	wg.Wait()
-	close(errChan)
 
 	nodeInfo := &gen.NodeMetrics{
 		Hostname: info.Hostname,
@@ -238,11 +210,6 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	}
 
 	logger.Debug("Finish to collect metrics")
-
-	var errs []error
-	for err := range errChan {
-		errs = append(errs, err)
-	}
 
 	return nodeInfo, errs
 }
