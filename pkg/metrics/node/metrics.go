@@ -25,12 +25,11 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	errChan := make(chan error, routines)
 	wg.Add(routines)
 
-	var err error
-
 	// 1
 	var info *host.InfoStat
 	go func() {
 		defer wg.Done()
+		var err error
 		logger.Debug("Start host.InfoWithContext")
 		info, err = host.InfoWithContext(ctx)
 		if err != nil {
@@ -42,6 +41,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	// 2
 	var cpuInfo []cpu.InfoStat
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start cpu.InfoWithContext")
 		cpuInfo, err = cpu.InfoWithContext(ctx)
 		if err != nil {
@@ -54,6 +55,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	var cpuPercents []float64
 	var _cpuInfos []*gen.CpuInfo
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start cpu.PercentWithContext")
 		cpuPercents, err = cpu.PercentWithContext(ctx, interval, true) // <-- true = per-core
 		if err != nil {
@@ -67,6 +70,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	// 4
 	var totalCpuPercent []float64
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start cpu.PercentWithContext")
 		totalCpuPercent, err = cpu.PercentWithContext(ctx, interval, false) // <-- true = per-core
 		if err != nil {
@@ -78,6 +83,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	// 5
 	var memInfo *mem.VirtualMemoryStat
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start mem.VirtualMemoryWithContext")
 		memInfo, err = mem.VirtualMemoryWithContext(ctx)
 		if err != nil {
@@ -90,6 +97,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	var netInfoIO []net.IOCountersStat
 	var _netUsage *gen.NetUsage
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start net.IOCountersWithContext")
 		netInfoIO, err = net.IOCountersWithContext(ctx, false)
 		if err != nil {
@@ -104,6 +113,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	var counters map[string]disk.IOCountersStat
 	var _diskIoSummary *gen.DiskIOSummary
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start disk.IOCountersWithContext")
 		counters, err = disk.IOCountersWithContext(ctx)
 		if err != nil {
@@ -118,6 +129,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	var partitions []disk.PartitionStat
 	var _diskUsages []*gen.DiskUsage
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start disk.PartitionsWithContext")
 		partitions, err = disk.PartitionsWithContext(ctx, true)
 		if err != nil {
@@ -131,6 +144,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	// 9
 	var processesMemInfo []*gen.ProcessMemInfo
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start ")
 		processesMemInfo, err = topMem(ctx, topN, logger)
 		if err != nil {
@@ -144,6 +159,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	var _networkInterfaces []*gen.InterfaceStat
 	var ipv4, ipv6 string
 	go func() {
+		defer wg.Done()
+		var err error
 		logger.Debug("Start net.InterfacesWithContext")
 		interfaces, err = net.InterfacesWithContext(ctx)
 		if err != nil {
@@ -158,16 +175,19 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	// 11
 	var cpuPsi, memPsi, ioPsi *gen.PsiMetrics
 	go func() {
+		defer wg.Done()
 		cpuPsi = psiMetrics("/proc/pressure/cpu", logger)
 	}()
 
 	// 12
 	go func() {
+		defer wg.Done()
 		memPsi = psiMetrics("/proc/pressure/memory", logger)
 	}()
 
 	// 13
 	go func() {
+		defer wg.Done()
 		ioPsi = psiMetrics("/proc/pressure/io", logger)
 	}()
 
