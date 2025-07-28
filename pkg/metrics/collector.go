@@ -81,10 +81,10 @@ func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient,
 	// Collect node-level metrics concurrently
 	go func() {
 		defer wg.Done()
-		var err error
-		nodeMetrics, err = node.Metrics(ctx, 1*time.Second, logger, topN)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
+		var errs []error
+		nodeMetrics, errs = node.Metrics(ctx, 1*time.Second, logger, topN)
+		if errs != nil {
+			logger.Error("Got errors during metrics collection", zap.Any("error", errs))
 		}
 	}()
 
