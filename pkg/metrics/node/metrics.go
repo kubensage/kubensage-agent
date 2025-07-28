@@ -19,55 +19,75 @@ import (
 func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, topN int) (*gen.NodeMetrics, error) {
 	logger.Debug("Start to collect metrics")
 
+	logger.Debug("Start host.InfoWithContext")
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish host.InfoWithContext")
 
+	logger.Debug("Start cpu.InfoWithContext")
 	cpuInfo, err := cpu.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish cpu.InfoWithContext")
 
+	logger.Debug("Start cpu.PercentWithContext")
 	cpuPercents, err := cpu.PercentWithContext(ctx, interval, true) // <-- true = per-core
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish cpu.PercentWithContext")
 
+	logger.Debug("Start cpu.PercentWithContext")
 	totalCpuPercent, err := cpu.PercentWithContext(ctx, interval, false) // <-- true = per-core
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish cpu.PercentWithContext")
 
+	logger.Debug("Start mem.VirtualMemoryWithContext")
 	memInfo, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish mem.VirtualMemoryWithContext")
 
+	logger.Debug("Start net.IOCountersWithContext")
 	netInfoIO, err := net.IOCountersWithContext(ctx, false)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish net.IOCountersWithContext")
 
+	logger.Debug("Start disk.IOCountersWithContext")
 	counters, err := disk.IOCountersWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish disk.IOCountersWithContext")
 
+	logger.Debug("Start disk.PartitionsWithContext")
 	partitions, err := disk.PartitionsWithContext(ctx, true)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish disk.PartitionsWithContext")
 
+	logger.Debug("Start net.InterfacesWithContext")
 	interfaces, err := net.InterfacesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish net.InterfacesWithContext")
 
+	logger.Debug("Start ")
 	processesMemInfo, err := topMem(ctx, topN, logger)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("Finish ")
 
 	cpuInfos := cpuInfos(cpuInfo, cpuPercents, logger)
 	netUsage := netUsage(netInfoIO[0], logger)
