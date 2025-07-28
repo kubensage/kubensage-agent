@@ -3,11 +3,14 @@ package node
 import (
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/net"
+	"go.uber.org/zap"
 	"strings"
 )
 
-func netUsage(stat net.IOCountersStat) *gen.NetUsage {
-	return &gen.NetUsage{
+func netUsage(stat net.IOCountersStat, logger *zap.Logger) *gen.NetUsage {
+	logger.Debug("Start netUsage")
+
+	netUsage := &gen.NetUsage{
 		TotalBytesSent:       stat.BytesSent,
 		TotalBytesReceived:   stat.BytesRecv,
 		TotalPacketsSent:     stat.PacketsSent,
@@ -19,9 +22,15 @@ func netUsage(stat net.IOCountersStat) *gen.NetUsage {
 		TotalFifoErrIn:       stat.Fifoin,
 		TotalFifoErrOut:      stat.Fifoout,
 	}
+
+	logger.Debug("Finish netUsage")
+
+	return netUsage
 }
 
-func networkInterfaces(interfaces net.InterfaceStatList) []*gen.InterfaceStat {
+func networkInterfaces(interfaces net.InterfaceStatList, logger *zap.Logger) []*gen.InterfaceStat {
+	logger.Debug("Start networkInterfaces")
+
 	networkInterfaces := make([]*gen.InterfaceStat, 0, len(interfaces))
 
 	for _, stat := range interfaces {
@@ -39,10 +48,15 @@ func networkInterfaces(interfaces net.InterfaceStatList) []*gen.InterfaceStat {
 			Addrs:        addresses,
 		})
 	}
+
+	logger.Debug("Finish networkInterfaces")
+
 	return networkInterfaces
 }
 
-func getPrimaryIPs(interfaces []*gen.InterfaceStat) (string, string) {
+func getPrimaryIPs(interfaces []*gen.InterfaceStat, logger *zap.Logger) (string, string) {
+	logger.Debug("Start getPrimaryIPs")
+
 	skipPrefixes := []string{"lo", "cali", "veth", "docker", "br-", "tunl", "flannel"}
 
 	var ipv4Addr, ipv6Addr string
@@ -93,5 +107,8 @@ func getPrimaryIPs(interfaces []*gen.InterfaceStat) (string, string) {
 			}
 		}
 	}
+
+	logger.Debug("Finish getPrimaryIPs")
+
 	return ipv4Addr, ipv6Addr
 }

@@ -17,6 +17,8 @@ import (
 // It gathers host metadata, CPU/memory usage, PSI metrics, and network interface details.
 // Returns a NodeMetrics struct on success or an error if any critical system call fails.
 func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, topN int) (*gen.NodeMetrics, error) {
+	logger.Debug("Start to collect metrics")
+
 	info, err := host.InfoWithContext(ctx)
 	if err != nil {
 		return nil, err
@@ -62,16 +64,16 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 		return nil, err
 	}
 
-	processesMemInfo, err := topMem(ctx, topN)
+	processesMemInfo, err := topMem(ctx, topN, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	cpuInfos := cpuInfos(cpuInfo, cpuPercents)
-	netUsage := netUsage(netInfoIO[0])
-	diskUsages := diskUsages(partitions)
-	diskIoSummary := diskIOSummary(counters)
-	networkInterfaces := networkInterfaces(interfaces)
+	cpuInfos := cpuInfos(cpuInfo, cpuPercents, logger)
+	netUsage := netUsage(netInfoIO[0], logger)
+	diskUsages := diskUsages(partitions, logger)
+	diskIoSummary := diskIOSummary(counters, logger)
+	networkInterfaces := networkInterfaces(interfaces, logger)
 
 	nodeInfo := &gen.NodeMetrics{
 		Hostname: info.Hostname,
@@ -109,7 +111,7 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 		NetworkInterfaces: networkInterfaces,
 	}
 
-	ipv4, ipv6 := getPrimaryIPs(networkInterfaces)
+	ipv4, ipv6 := getPrimaryIPs(networkInterfaces, logger)
 
 	if ipv4 != "" {
 		nodeInfo.PrimaryIpv4 = wrapperspb.String(ipv4)
@@ -117,6 +119,8 @@ func Metrics(ctx context.Context, interval time.Duration, logger *zap.Logger, to
 	if ipv6 != "" {
 		nodeInfo.PrimaryIpv6 = wrapperspb.String(ipv6)
 	}
+
+	logger.Debug("Finish to collect metrics")
 
 	return nodeInfo, nil
 }

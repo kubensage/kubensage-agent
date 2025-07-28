@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/process"
+	"go.uber.org/zap"
 	"sort"
 )
 
@@ -21,7 +22,9 @@ import (
 // Notes:
 //   - Processes that fail to report memory or name are skipped silently.
 //   - If fewer than topN valid processes are available, the result will contain less than topN items.
-func topMem(ctx context.Context, topN int) ([]*gen.ProcessMemInfo, error) {
+func topMem(ctx context.Context, topN int, logger *zap.Logger) ([]*gen.ProcessMemInfo, error) {
+	logger.Debug("Start topMem")
+
 	// Retrieve the list of all running processes
 	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
@@ -60,6 +63,8 @@ func topMem(ctx context.Context, topN int) ([]*gen.ProcessMemInfo, error) {
 	}
 	topProcesses := make([]*gen.ProcessMemInfo, top)
 	copy(topProcesses, processesMemInfo[:top])
+
+	logger.Debug("Finish topMem")
 
 	return topProcesses, nil
 }

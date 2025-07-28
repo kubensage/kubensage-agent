@@ -3,9 +3,12 @@ package node
 import (
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"go.uber.org/zap"
 )
 
-func cpuInfos(cpuInfo []cpu.InfoStat, cpuPercents []float64) []*gen.CpuInfo {
+func cpuInfos(cpuInfo []cpu.InfoStat, cpuPercents []float64, logger *zap.Logger) []*gen.CpuInfo {
+	logger.Debug("Start cpuInfos")
+
 	var cpuInfos []*gen.CpuInfo
 	minLen := len(cpuInfo)
 	if len(cpuPercents) < minLen {
@@ -25,5 +28,8 @@ func cpuInfos(cpuInfo []cpu.InfoStat, cpuPercents []float64) []*gen.CpuInfo {
 			Usage:      cpuPercents[i],
 		})
 	}
+
+	logger.Debug("End cpuInfos")
+
 	return cpuInfos
 }

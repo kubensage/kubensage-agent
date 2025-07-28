@@ -14,6 +14,8 @@ import (
 // It safely extracts "some" and "full" pressure lines and their average/total values.
 // If the file cannot be opened or parsed, it logs the error and returns an empty PsiMetrics struct.
 func psiMetrics(path string, logger *zap.Logger) *gen.PsiMetrics {
+	logger.Debug("Start psiMetrics")
+
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Error("Failed to open metrics file", zap.String("path", path), zap.Error(err))
@@ -71,6 +73,8 @@ func psiMetrics(path string, logger *zap.Logger) *gen.PsiMetrics {
 			metrics.Full = entry
 		}
 	}
+
+	logger.Debug("Finish getPrimaryIPs")
 
 	return &metrics
 }

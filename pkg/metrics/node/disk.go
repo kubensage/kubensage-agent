@@ -3,10 +3,13 @@ package node
 import (
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/disk"
+	"go.uber.org/zap"
 	"strings"
 )
 
-func diskIOSummary(counters map[string]disk.IOCountersStat) *gen.DiskIOSummary {
+func diskIOSummary(counters map[string]disk.IOCountersStat, logger *zap.Logger) *gen.DiskIOSummary {
+	logger.Debug("Start diskIOSummary")
+
 	var readBytes, writeBytes, readOps, writeOps uint64
 	for name, stat := range counters {
 		if strings.HasPrefix(name, "loop") || strings.HasPrefix(name, "ram") {
@@ -25,14 +28,19 @@ func diskIOSummary(counters map[string]disk.IOCountersStat) *gen.DiskIOSummary {
 		TotalReadOps:    readOps,
 		TotalWriteOps:   writeOps,
 	}
+
+	logger.Debug("End diskIOSummary")
+
 	return summary
 }
 
-func diskUsages(partitions []disk.PartitionStat) []*gen.DiskUsage {
+func diskUsages(partitions []disk.PartitionStat, logger *zap.Logger) []*gen.DiskUsage {
+	logger.Debug("Start diskUsages")
+
 	diskUsages := make([]*gen.DiskUsage, 0, len(partitions))
 
 	for _, p := range partitions {
-		if !isRealFilesystem(p.Fstype) {
+		if !isRealFilesystem(p.Fstype, logger) {
 			continue
 		}
 
@@ -52,10 +60,14 @@ func diskUsages(partitions []disk.PartitionStat) []*gen.DiskUsage {
 		})
 	}
 
+	logger.Debug("End diskUsages")
+
 	return diskUsages
 }
 
-func isRealFilesystem(fstype string) bool {
+func isRealFilesystem(fstype string, logger *zap.Logger) bool {
+	logger.Debug("Start isRealFilesystem")
+
 	realFS := []string{
 		// Linux
 		"ext4", "ext3", "ext2", "xfs", "btrfs", "zfs", "f2fs", "nilfs2",
@@ -78,5 +90,8 @@ func isRealFilesystem(fstype string) bool {
 			return true
 		}
 	}
+
+	logger.Debug("End isRealFilesystem")
+
 	return false
 }
