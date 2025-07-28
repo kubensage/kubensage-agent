@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// CollectionLoop starts a continuous loop that periodically collects node and pod
+// CollectOnce starts a continuous loop that periodically collects node and pod
 // metrics from the container runtime using the CRI client. The collected metrics
 // are pushed into a shared ring buffer for later processing and transmission
-// via the SendingLoop.
+// via the SendOnce.
 //
 // Parameters:
 // - ctx: Context used to control the lifecycle of the loop (cancellation, shutdown).
@@ -33,39 +33,27 @@ import (
 // - Collected data is added to the ring buffer if successful.
 // - Partial errors are logged but do not interrupt the loop.
 // - The loop exits gracefully when the context is cancelled.
-func CollectionLoop(
+func CollectOnce(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
 	buffer *utils.RingBuffer,
 	agentCfg *agentcli.AgentConfig,
 	logger *zap.Logger,
-) {
-	logger.Info("Starting metrics collection", zap.Duration("interval", agentCfg.MainLoopDurationSeconds))
-
-	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("Stopping metrics collection")
-			return
-
-		case <-ticker.C:
-			logger.Debug("Collecting metrics")
-			metricsData, errs := collectMetrics(ctx, runtimeClient, logger, agentCfg.TopN)
-			if errs != nil {
-				var errStrs []string
-				for _, e := range errs {
-					errStrs = append(errStrs, e.Error())
-				}
-				logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
-				continue
-			}
-			buffer.Add(metricsData)
-			logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+) []error {
+	logger.Debug("Collecting metrics")
+	metricsData, errs := collectMetrics(ctx, runtimeClient, logger, agentCfg.TopN)
+	if errs != nil {
+		var errStrs []string
+		for _, e := range errs {
+			errStrs = append(errStrs, e.Error())
 		}
+		logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
+		return errs
 	}
+	buffer.Add(metricsData)
+	logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+
+	return nil
 }
 
 // collectMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).

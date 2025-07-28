@@ -79,8 +79,36 @@ func main() {
 	collectorLogger := logger.Named("collector")
 	senderLogger := logger.Named("sender")
 
-	go metrics.CollectionLoop(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
-	metrics.SendingLoop(ctx, relayClient, buffer, agentCfg, senderLogger)
+	go func() {
+		ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
+		defer ticker.Stop()
+
+		stream, err := relayClient.SendMetrics(ctx)
+		if err != nil {
+			logger.Error("failed to send metrics", zap.Error(err))
+		} else {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					errors := metrics.CollectOnce(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
+
+					if errors != nil {
+						logger.Error("Errors while collecting metrics", zap.Any("errors", errors))
+						return
+					}
+
+					err := metrics.SendOnce(ctx, relayClient, stream, buffer, senderLogger)
+					if err != nil {
+						logger.Error("Error while sending metrics", zap.Error(err))
+						return
+					}
+				}
+			}
+		}
+
+	}()
 }
 
 func computeBufferSize(loopInterval time.Duration, retentionDuration time.Duration) int {
