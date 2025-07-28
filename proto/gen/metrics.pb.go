@@ -27,10 +27,12 @@ const (
 // and pod-level metrics (for all pods and containers running on the node).
 type Metrics struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Timestamp related to the start of metrics collection
+	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// System-level metrics for the current node.
-	NodeMetrics *NodeMetrics `protobuf:"bytes,1,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`
+	NodeMetrics *NodeMetrics `protobuf:"bytes,2,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`
 	// Runtime metrics for all pods and their containers scheduled on this node.
-	PodMetrics    []*PodMetrics `protobuf:"bytes,2,rep,name=pod_metrics,json=podMetrics,proto3" json:"pod_metrics,omitempty"`
+	PodMetrics    []*PodMetrics `protobuf:"bytes,3,rep,name=pod_metrics,json=podMetrics,proto3" json:"pod_metrics,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -65,6 +67,13 @@ func (*Metrics) Descriptor() ([]byte, []int) {
 	return file_proto_metrics_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *Metrics) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
 func (x *Metrics) GetNodeMetrics() *NodeMetrics {
 	if x != nil {
 		return x.NodeMetrics
@@ -83,10 +92,11 @@ var File_proto_metrics_proto protoreflect.FileDescriptor
 
 const file_proto_metrics_proto_rawDesc = "" +
 	"\n" +
-	"\x13proto/metrics.proto\x12\ametrics\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18proto/node_metrics.proto\x1a\x17proto/pod_metrics.proto\"x\n" +
-	"\aMetrics\x127\n" +
-	"\fnode_metrics\x18\x01 \x01(\v2\x14.metrics.NodeMetricsR\vnodeMetrics\x124\n" +
-	"\vpod_metrics\x18\x02 \x03(\v2\x13.metrics.PodMetricsR\n" +
+	"\x13proto/metrics.proto\x12\ametrics\x1a\x1bgoogle/protobuf/empty.proto\x1a\x18proto/node_metrics.proto\x1a\x17proto/pod_metrics.proto\"\x96\x01\n" +
+	"\aMetrics\x12\x1c\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x127\n" +
+	"\fnode_metrics\x18\x02 \x01(\v2\x14.metrics.NodeMetricsR\vnodeMetrics\x124\n" +
+	"\vpod_metrics\x18\x03 \x03(\v2\x13.metrics.PodMetricsR\n" +
 	"podMetrics2\x8b\x01\n" +
 	"\x0eMetricsService\x129\n" +
 	"\vSendMetrics\x12\x10.metrics.Metrics\x1a\x16.google.protobuf.Empty(\x01\x12>\n" +

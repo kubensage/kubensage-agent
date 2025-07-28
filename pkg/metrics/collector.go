@@ -71,6 +71,7 @@ func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient,
 	// Error channel for concurrent metric collection
 	errChan := make(chan error, 4)
 
+	timestamp := time.Now().Unix()
 	var pods []*cri.PodSandbox
 	var containers []*cri.Container
 	var containersStats []*cri.ContainerStats
@@ -82,7 +83,7 @@ func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient,
 	go func() {
 		defer wg.Done()
 		var errs []error
-		nodeMetrics, errs = node.Metrics(ctx, 1*time.Second, logger, topN)
+		nodeMetrics, errs = node.Metrics(ctx, 0*time.Second, logger, topN)
 		if errs != nil {
 			logger.Error("Got errors during metrics collection", zap.Any("error", errs))
 		}
@@ -157,6 +158,7 @@ func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient,
 
 	// Final assembled metrics object
 	metrics := &gen.Metrics{
+		Timestamp:   timestamp,
 		NodeMetrics: nodeMetrics,
 		PodMetrics:  podsMetrics,
 	}
