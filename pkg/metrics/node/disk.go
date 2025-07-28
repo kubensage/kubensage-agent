@@ -66,8 +66,6 @@ func diskUsages(partitions []disk.PartitionStat, logger *zap.Logger) []*gen.Disk
 }
 
 func isRealFilesystem(fstype string, logger *zap.Logger) bool {
-	logger.Debug("Start isRealFilesystem")
-
 	realFS := []string{
 		// Linux
 		"ext4", "ext3", "ext2", "xfs", "btrfs", "zfs", "f2fs", "nilfs2",
@@ -90,8 +88,6 @@ func isRealFilesystem(fstype string, logger *zap.Logger) bool {
 			return true
 		}
 	}
-
-	logger.Debug("End isRealFilesystem")
 
 	return false
 }
