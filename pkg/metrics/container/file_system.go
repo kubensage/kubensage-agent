@@ -7,10 +7,29 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// fileSystemMetrics safely extracts file system metrics from a ContainerStats object.
-// If the WritableLayer or any subfield is missing, default values are used.
-// This function prevents panics when fields are nil and ensures consistency across data collection.
-func fileSystemMetrics(stats *cri.ContainerStats) *gen.FileSystemMetrics {
+// buildFileSystemMetrics constructs a *gen.FileSystemMetrics message from the
+// WritableLayer section of a given CRI ContainerStats object.
+//
+// This function handles missing or optional fields gracefully. If WritableLayer
+// is nil, it returns an empty FileSystemMetrics struct. Optional numeric fields
+// (e.g., UsedBytes, InodesUsed) are converted to protobuf wrapper types only if present.
+// The mountpoint is extracted from FsId.Mountpoint, or set to an empty string if unavailable.
+//
+// Parameters:
+//   - stats: *cri.ContainerStats
+//     The container statistics from the CRI runtime, expected to include filesystem usage data.
+//
+// Returns:
+//   - *gen.FileSystemMetrics
+//     A populated FileSystemMetrics object with:
+//   - Timestamp: from WritableLayer.Timestamp
+//   - UsedBytes: wrapped value from WritableLayer.UsedBytes (optional)
+//   - InodesUsed: wrapped value from WritableLayer.InodesUsed (optional)
+//   - Mountpoint: from WritableLayer.FsId.Mountpoint if available, empty otherwise.
+//     If WritableLayer is nil, an empty FileSystemMetrics struct is returned.
+func buildFileSystemMetrics(
+	stats *cri.ContainerStats,
+) *gen.FileSystemMetrics {
 	if stats.WritableLayer == nil {
 		return &gen.FileSystemMetrics{}
 	}

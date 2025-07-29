@@ -5,8 +5,9 @@ import (
 	"os"
 )
 
-// criSocketCandidates lists known default CRI socket paths for supported runtimes.
-// The keys are runtime names (e.g., containerd, crio) used only for logging.
+// criSocketCandidates defines a list of known CRI (Container Runtime Interface) socket paths,
+// grouped by runtime type. These are the default installation paths for common runtimes
+// like containerd, CRI-O, and dockershim.
 var criSocketCandidates = map[string][]string{
 	"containerd": {
 		"/run/containerd/containerd.sock",
@@ -20,9 +21,15 @@ var criSocketCandidates = map[string][]string{
 	},
 }
 
-// CriSocketDiscovery attempts to detect the active CRI runtime socket by scanning known paths.
-// It returns the full socket URI (e.g., "unix:///run/containerd/containerd.sock") if successful.
-// If no known socket is found, it returns an error.
+// CriSocketDiscovery attempts to discover a valid CRI Unix socket on the host.
+//
+// It iterates over a predefined list of well-known socket paths used by popular
+// container runtimes (e.g., containerd, CRI-O, dockershim). The function checks for
+// the existence of each socket file and returns the first match found, prefixed with "unix://".
+//
+// Returns:
+//   - string: the full URI to the discovered socket (e.g., "unix:///var/run/containerd/containerd.sock")
+//   - error: non-nil if no known CRI sockets were found or accessible
 func CriSocketDiscovery() (string, error) {
 	for _, paths := range criSocketCandidates {
 		for _, p := range paths {

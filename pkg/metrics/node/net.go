@@ -7,8 +7,22 @@ import (
 	"strings"
 )
 
-func netUsage(stat net.IOCountersStat, logger *zap.Logger) *gen.NetUsage {
-	logger.Debug("Start netUsage")
+// buildNetUsage converts a gopsutil net.IOCountersStat into a gen.NetUsage proto message.
+//
+// It extracts cumulative network statistics such as bytes sent/received, packets,
+// errors, and drops. Designed to be used for node-level interface aggregation.
+//
+// Parameters:
+//   - stat: net.IOCountersStat with network counters from gopsutil
+//   - logger: Logger used for debug messages
+//
+// Returns:
+//   - *gen.NetUsage containing summarized network metrics
+func buildNetUsage(
+	stat net.IOCountersStat,
+	logger *zap.Logger,
+) *gen.NetUsage {
+	logger.Debug("Start buildNetUsage")
 
 	netUsage := &gen.NetUsage{
 		TotalBytesSent:       stat.BytesSent,
@@ -23,13 +37,28 @@ func netUsage(stat net.IOCountersStat, logger *zap.Logger) *gen.NetUsage {
 		TotalFifoErrOut:      stat.Fifoout,
 	}
 
-	logger.Debug("Finish netUsage")
+	logger.Debug("Finish buildNetUsage")
 
 	return netUsage
 }
 
-func networkInterfaces(interfaces net.InterfaceStatList, logger *zap.Logger) []*gen.InterfaceStat {
-	logger.Debug("Start networkInterfaces")
+// ListNetworkInterfaces maps gopsutil network interfaces into proto InterfaceStat messages.
+//
+// Each interface includes its name, index, MTU, hardware address, flags,
+// and assigned IP addresses. This function helps serialize interface metadata
+// for transmission or storage.
+//
+// Parameters:
+//   - interfaces: List of network interfaces from gopsutil
+//   - logger: Logger for debug tracing
+//
+// Returns:
+//   - []*gen.InterfaceStat representing all valid system interfaces
+func listNetworkInterfaces(
+	interfaces net.InterfaceStatList,
+	logger *zap.Logger,
+) []*gen.InterfaceStat {
+	logger.Debug("Start listNetworkInterfaces")
 
 	networkInterfaces := make([]*gen.InterfaceStat, 0, len(interfaces))
 
@@ -49,13 +78,28 @@ func networkInterfaces(interfaces net.InterfaceStatList, logger *zap.Logger) []*
 		})
 	}
 
-	logger.Debug("Finish networkInterfaces")
+	logger.Debug("Finish listNetworkInterfaces")
 
 	return networkInterfaces
 }
 
-func getPrimaryIPs(interfaces []*gen.InterfaceStat, logger *zap.Logger) (string, string) {
-	logger.Debug("Start getPrimaryIPs")
+// buildPrimaryIPs determines the primary IPv4 and IPv6 addresses from a list of interfaces.
+//
+// It skips loopback, virtual, and known non-routable interface prefixes (e.g. `veth`, `cali`, etc.).
+// The first found global-scope IPv4 and IPv6 addresses are returned.
+//
+// Parameters:
+//   - interfaces: List of proto InterfaceStat objects
+//   - logger: Logger for debug tracing
+//
+// Returns:
+//   - ipv4Addr: Primary IPv4 address as string (empty if not found)
+//   - ipv6Addr: Primary IPv6 address as string (empty if not found)
+func buildPrimaryIPs(
+	interfaces []*gen.InterfaceStat,
+	logger *zap.Logger,
+) (string, string) {
+	logger.Debug("Start buildPrimaryIPs")
 
 	skipPrefixes := []string{"lo", "cali", "veth", "docker", "br-", "tunl", "flannel"}
 
@@ -108,7 +152,7 @@ func getPrimaryIPs(interfaces []*gen.InterfaceStat, logger *zap.Logger) (string,
 		}
 	}
 
-	logger.Debug("Finish getPrimaryIPs")
+	logger.Debug("Finish buildPrimaryIPs")
 
 	return ipv4Addr, ipv6Addr
 }

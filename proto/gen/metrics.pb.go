@@ -27,7 +27,7 @@ const (
 // and pod-level metrics (for all pods and containers running on the node).
 type Metrics struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Timestamp related to the start of metrics collection
+	// Timestamp related to the start of metrics collection (Unix timestamp)
 	Timestamp int64 `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// System-level metrics for the current node.
 	NodeMetrics *NodeMetrics `protobuf:"bytes,2,opt,name=node_metrics,json=nodeMetrics,proto3" json:"node_metrics,omitempty"`

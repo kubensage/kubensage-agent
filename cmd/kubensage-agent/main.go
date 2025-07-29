@@ -1,19 +1,18 @@
-// Package main implements the entry point for the kubensage-agent.
-// It connects to the CRI (Container Runtime Interface), collects container metrics periodically,
-// and streams them to a remote relay service over gRPC.
 package main
 
 import (
 	"context"
 	"flag"
+	"github.com/kubensage/go-common/datastructure"
+	"github.com/kubensage/kubensage-agent/proto/gen"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	commoncli "github.com/kubensage/go-common/cli"
+	"github.com/kubensage/go-common/cli"
 	"github.com/kubensage/go-common/log"
-	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
+	"github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/pkg/discovery"
 	"github.com/kubensage/kubensage-agent/pkg/metrics"
 	"github.com/kubensage/kubensage-agent/pkg/utils"
@@ -22,13 +21,21 @@ import (
 
 const appName = "kubensage-agent"
 
+// main is the entrypoint for the kubensage-agent.
+//
+// It initializes CLI flags, configures structured logging,
+// discovers the CRI socket, establishes gRPC connections to the CRI and relay server,
+// and starts a loop that periodically collects and sends system and container metrics.
+//
+// The loop continues until an interrupt signal (SIGINT or SIGTERM) is received.
 func main() {
-	logCfgLoader := commoncli.RegisterLogStdAndFileFlags(flag.CommandLine, appName)
-	agentCfgLoader := agentcli.RegisterAgentFlags(flag.CommandLine)
+
+	logCfgLoader := gocli.RegisterLogStdAndFileFlags(flag.CommandLine, appName)
+	agentCfgLoader := cli.RegisterAgentFlags(flag.CommandLine)
 	flag.Parse()
 
 	logCfg := logCfgLoader()
-	logger := log.SetupStdAndFileLogger(logCfg)
+	logger := golog.SetupStdAndFileLogger(logCfg)
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		if err != nil {
@@ -37,7 +44,7 @@ func main() {
 	}(logger)
 
 	agentCfg := agentCfgLoader(logger)
-	log.LogStartupInfo(logger, appName, logCfg, agentCfg)
+	golog.LogStartupInfo(logger, appName, logCfg, agentCfg)
 
 	logger.Info("Connecting to relay", zap.String("relay_address", agentCfg.RelayAddress))
 
@@ -72,7 +79,7 @@ func main() {
 	}()
 
 	bufferSize := computeBufferSize(agentCfg.MainLoopDurationSeconds, agentCfg.BufferRetention)
-	buffer := utils.NewMetricsRingBuffer(bufferSize)
+	buffer := datastructure.NewRingBuffer[*gen.Metrics](bufferSize)
 	logger.Info("metrics ring buffer initialized", zap.Int("buffer_size", bufferSize))
 
 	// SCOPED loggers
@@ -107,11 +114,21 @@ func main() {
 			}
 		}
 	}
-
-	//}()
 }
 
-func computeBufferSize(loopInterval time.Duration, retentionDuration time.Duration) int {
+// computeBufferSize calculates the number of metric entries to retain in the ring buffer
+// based on the main loop interval and total retention duration.
+//
+// Parameters:
+//   - loopInterval: Duration between each collection loop (e.g., 5s)
+//   - retentionDuration: Total duration to retain metrics (e.g., 10m)
+//
+// Returns:
+//   - The number of entries the buffer should support to meet the retention window.
+func computeBufferSize(
+	loopInterval time.Duration,
+	retentionDuration time.Duration,
+) int {
 	if loopInterval <= 0 {
 		return 1
 	}

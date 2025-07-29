@@ -6,10 +6,25 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// Pods retrieves a list of all pod sandboxes from the CRI runtime.
-// It sends a ListPodSandboxRequest with default filters and returns the response items.
-// If the request fails, it returns an error.
-func Pods(
+// ListPods retrieves the list of pod sandboxes from the CRI runtime.
+//
+// If getOnlyReady is true, the function applies a filter to include only pods
+// in the SANDBOX_READY state. If false, it fetches all available pod sandboxes.
+//
+// Parameters:
+//   - ctx context.Context:
+//     Standard context for cancellation and timeout propagation.
+//   - runtimeClient cri.RuntimeServiceClient:
+//     The CRI client used to interact with the container runtime's gRPC API.
+//   - getOnlyReady bool:
+//     A boolean flag to determine whether to return only ready pods.
+//
+// Returns:
+//   - []*cri.PodSandbox:
+//     A slice of pod sandbox objects returned by the runtime.
+//   - error:
+//     An error if the CRI request fails, or nil on success.
+func ListPods(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
 	getOnlyReady bool,
