@@ -42,7 +42,7 @@ func RegisterAgentFlags(
 	fs *flag.FlagSet,
 ) func(logger *zap.Logger) *AgentConfig {
 	relayAddress := fs.String("relay-address", "", "Relay address (required)")
-	mainLoopDuration := fs.Int("main-loop-duration", 5, "Main loop duration in milliseconds")
+	mainLoopDuration := fs.Int("main-loop-duration", 5, "Main loop duration in seconds")
 	bufferRetention := fs.Int("buffer-retention", 10, "Buffer retention in minutes")
 	topN := fs.Int("top-n", 10, "Top N processes")
 
