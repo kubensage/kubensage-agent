@@ -3,11 +3,28 @@ package node
 import (
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/net"
+	"go.uber.org/zap"
 	"strings"
 )
 
-func netUsage(stat net.IOCountersStat) *gen.NetUsage {
-	return &gen.NetUsage{
+// buildNetUsage converts a gopsutil net.IOCountersStat into a gen.NetUsage proto message.
+//
+// It extracts cumulative network statistics such as bytes sent/received, packets,
+// errors, and drops. Designed to be used for node-level interface aggregation.
+//
+// Parameters:
+//   - stat: net.IOCountersStat with network counters from gopsutil
+//   - logger: Logger used for debug messages
+//
+// Returns:
+//   - *gen.NetUsage containing summarized network metrics
+func buildNetUsage(
+	stat net.IOCountersStat,
+	logger *zap.Logger,
+) *gen.NetUsage {
+	logger.Debug("Start buildNetUsage")
+
+	netUsage := &gen.NetUsage{
 		TotalBytesSent:       stat.BytesSent,
 		TotalBytesReceived:   stat.BytesRecv,
 		TotalPacketsSent:     stat.PacketsSent,
@@ -19,9 +36,30 @@ func netUsage(stat net.IOCountersStat) *gen.NetUsage {
 		TotalFifoErrIn:       stat.Fifoin,
 		TotalFifoErrOut:      stat.Fifoout,
 	}
+
+	logger.Debug("Finish buildNetUsage")
+
+	return netUsage
 }
 
-func networkInterfaces(interfaces net.InterfaceStatList) []*gen.InterfaceStat {
+// ListNetworkInterfaces maps gopsutil network interfaces into proto InterfaceStat messages.
+//
+// Each interface includes its name, index, MTU, hardware address, flags,
+// and assigned IP addresses. This function helps serialize interface metadata
+// for transmission or storage.
+//
+// Parameters:
+//   - interfaces: List of network interfaces from gopsutil
+//   - logger: Logger for debug tracing
+//
+// Returns:
+//   - []*gen.InterfaceStat representing all valid system interfaces
+func listNetworkInterfaces(
+	interfaces net.InterfaceStatList,
+	logger *zap.Logger,
+) []*gen.InterfaceStat {
+	logger.Debug("Start listNetworkInterfaces")
+
 	networkInterfaces := make([]*gen.InterfaceStat, 0, len(interfaces))
 
 	for _, stat := range interfaces {
@@ -39,10 +77,30 @@ func networkInterfaces(interfaces net.InterfaceStatList) []*gen.InterfaceStat {
 			Addrs:        addresses,
 		})
 	}
+
+	logger.Debug("Finish listNetworkInterfaces")
+
 	return networkInterfaces
 }
 
-func getPrimaryIPs(interfaces []*gen.InterfaceStat) (string, string) {
+// buildPrimaryIPs determines the primary IPv4 and IPv6 addresses from a list of interfaces.
+//
+// It skips loopback, virtual, and known non-routable interface prefixes (e.g. `veth`, `cali`, etc.).
+// The first found global-scope IPv4 and IPv6 addresses are returned.
+//
+// Parameters:
+//   - interfaces: List of proto InterfaceStat objects
+//   - logger: Logger for debug tracing
+//
+// Returns:
+//   - ipv4Addr: Primary IPv4 address as string (empty if not found)
+//   - ipv6Addr: Primary IPv6 address as string (empty if not found)
+func buildPrimaryIPs(
+	interfaces []*gen.InterfaceStat,
+	logger *zap.Logger,
+) (string, string) {
+	logger.Debug("Start buildPrimaryIPs")
+
 	skipPrefixes := []string{"lo", "cali", "veth", "docker", "br-", "tunl", "flannel"}
 
 	var ipv4Addr, ipv6Addr string
@@ -93,5 +151,8 @@ func getPrimaryIPs(interfaces []*gen.InterfaceStat) (string, string) {
 			}
 		}
 	}
+
+	logger.Debug("Finish buildPrimaryIPs")
+
 	return ipv4Addr, ipv6Addr
 }

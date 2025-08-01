@@ -10,10 +10,27 @@ import (
 	"strings"
 )
 
-// SafePsiMetrics reads and parses pressure stall information (PSI) from the given /proc/pressure/<resource> file.
-// It safely extracts "some" and "full" pressure lines and their average/total values.
-// If the file cannot be opened or parsed, it logs the error and returns an empty PsiMetrics struct.
-func psiMetrics(path string, logger *zap.Logger) *gen.PsiMetrics {
+// buildPsiMetrics reads Pressure Stall Information (PSI) metrics from a given /proc file.
+//
+// PSI metrics provide visibility into resource pressure for CPU, memory, and I/O.
+// The file is expected to follow the format of /proc/pressure/{cpu|memory|io}.
+// This function parses `some` and `full` stall entries, extracting avg10, avg60,
+// avg300, and total values into a gen.PsiMetrics protobuf message.
+//
+// If the file cannot be read or parsed, a zero-valued PsiMetrics struct is returned.
+//
+// Parameters:
+//   - path: Absolute path to the PSI file (e.g., "/proc/pressure/cpu")
+//   - logger: Logger used for debug and error tracing
+//
+// Returns:
+//   - *gen.PsiMetrics containing the parsed stall data
+func buildPsiMetrics(
+	path string,
+	logger *zap.Logger,
+) *gen.PsiMetrics {
+	logger.Debug("Start buildPsiMetrics")
+
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Error("Failed to open metrics file", zap.String("path", path), zap.Error(err))
@@ -71,6 +88,8 @@ func psiMetrics(path string, logger *zap.Logger) *gen.PsiMetrics {
 			metrics.Full = entry
 		}
 	}
+
+	logger.Debug("Finish buildPrimaryIPs")
 
 	return &metrics
 }

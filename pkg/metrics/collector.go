@@ -3,11 +3,12 @@ package metrics
 import (
 	"context"
 	"fmt"
-	agentcli "github.com/kubensage/kubensage-agent/pkg/cli"
+	"github.com/kubensage/go-common/datastructure"
+	gogo "github.com/kubensage/go-common/go"
+	"github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/container"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/node"
 	"github.com/kubensage/kubensage-agent/pkg/metrics/pod"
-	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -15,145 +16,145 @@ import (
 	"time"
 )
 
-// CollectionLoop starts a continuous loop that periodically collects node and pod
-// metrics from the container runtime using the CRI client. The collected metrics
-// are pushed into a shared ring buffer for later processing and transmission
-// via the SendingLoop.
+// CollectOnce performs a single metrics collection cycle.
+//
+// It retrieves metrics from the node, containers, and pods by calling the internal `collect`
+// function. The gathered metrics are then pushed into the provided ring buffer for later transmission.
+//
+// This function is typically invoked periodically by the main loop.
 //
 // Parameters:
-// - ctx: Context used to control the lifecycle of the loop (cancellation, shutdown).
-// - runtimeClient: CRI client used to retrieve pod, container, and stats data.
-// - buffer: A ring buffer that stores collected metrics before they're sent.
-// - agentCfg: Agent configuration that defines the collection interval and limits.
-// - logger: Zap logger for debug and error logging.
+//   - ctx context.Context:
+//     Context for managing timeouts or cancellation of the metric collection process.
+//   - runtimeClient cri.RuntimeServiceClient:
+//     CRI client used to query the container runtime for pods, containers, and stats.
+//   - buffer *datastructure.RingBuffer[*gen.Metrics]:
+//     A ring buffer where the collected *gen.Metrics data is stored.
+//   - agentCfg *cli.AgentConfig:
+//     Agent configuration, including the number of top memory-consuming processes to collect.
+//   - logger *zap.Logger:
+//     Logger instance for debug and error output.
 //
-// Behavior:
-// - A ticker triggers metric collection at the configured interval.
-// - On each tick, collectMetrics() gathers node and pod/container metrics.
-// - Collected data is added to the ring buffer if successful.
-// - Partial errors are logged but do not interrupt the loop.
-// - The loop exits gracefully when the context is cancelled.
-func CollectionLoop(
+// Returns:
+//   - []error:
+//     A slice of errors encountered during metric collection.
+//     Returns nil if collection succeeded without any issues.
+func CollectOnce(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
-	buffer *utils.RingBuffer,
-	agentCfg *agentcli.AgentConfig,
+	buffer *datastructure.RingBuffer[*gen.Metrics],
+	agentCfg *cli.AgentConfig,
 	logger *zap.Logger,
-) {
-	logger.Info("Starting metrics collection", zap.Duration("interval", agentCfg.MainLoopDurationSeconds))
-
-	ticker := time.NewTicker(agentCfg.MainLoopDurationSeconds)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("Stopping metrics collection")
-			return
-
-		case <-ticker.C:
-			logger.Debug("Collecting metrics")
-			metricsData, errs := collectMetrics(ctx, runtimeClient, logger, agentCfg.TopN)
-			if errs != nil {
-				var errStrs []string
-				for _, e := range errs {
-					errStrs = append(errStrs, e.Error())
-				}
-				logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
-				continue
-			}
-			buffer.Add(metricsData)
-			logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+) []error {
+	logger.Debug("Collecting metrics")
+	metricsData, errs := collect(ctx, runtimeClient, logger, agentCfg.TopN)
+	if errs != nil {
+		var errStrs []string
+		for _, e := range errs {
+			errStrs = append(errStrs, e.Error())
 		}
+		logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
+		return errs
 	}
+	buffer.Add(metricsData)
+	logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
+
+	return nil
 }
 
-// collectMetrics collects both node-level and pod-level metrics from the container runtime API (CRI).
-// The collection process is parallelized across four sources:
-// - Node metrics (CPU, memory, PSI, etc.)
-// - Pod sandboxes
-// - Containers
-// - Container stats
+// collect gathers both node-level and container-level metrics in parallel,
+// using goroutines for efficient concurrent execution. It constructs a
+// unified *gen.Metrics message containing resource usage data from the node,
+// pods, and their containers.
 //
-// The function returns a populated *metrics object and a slice of errors that occurred during collection.
-// Partial failures (e.g., missing stats for a container) do not block the overall process.
-func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient, logger *zap.Logger, topN int) (*gen.Metrics, []error) {
-	var wg sync.WaitGroup
+// This function performs the following in parallel:
+//   - Collects node metrics (CPU, memory, disk, network, etc.)
+//   - Lists running pods
+//   - Lists running containers
+//   - Fetches container stats
+//
+// Then it aggregates container metrics per pod, builds corresponding
+// *gen.PodMetrics, and wraps everything into a *gen.Metrics structure.
+//
+// Parameters:
+//   - ctx context.Context:
+//     Context for managing cancellation and timeouts.
+//   - runtimeClient cri.RuntimeServiceClient:
+//     CRI client interface for interacting with the container runtime.
+//   - logger *zap.Logger:
+//     Logger instance used for debugging and error reporting.
+//   - topN int:
+//     Number of top memory-consuming processes to include in node metrics.
+//
+// Returns:
+//   - *gen.Metrics:
+//     A metrics object containing node-wide and per-pod/container metrics.
+//   - []error:
+//     A list of errors encountered during metric collection. May be empty.
+func collect(
+	ctx context.Context,
+	runtimeClient cri.RuntimeServiceClient,
+	logger *zap.Logger,
+	topN int,
+) (*gen.Metrics, []error) {
+	timestamp := time.Now().Unix()
 
-	// Error channel for concurrent metric collection
-	errChan := make(chan error, 4)
+	var wg sync.WaitGroup
+	var errs []error
+
+	var nodeMetrics *gen.NodeMetrics // NodeMetrics
+	gogo.SafeGo(&wg, func() {
+		var errs []error
+		nodeMetrics, errs = node.BuildNodeMetrics(ctx, 0*time.Second, logger, topN)
+		if errs != nil {
+			for _, e := range errs {
+				errs = append(errs, e)
+			}
+		}
+	})
 
 	var pods []*cri.PodSandbox
+	gogo.SafeGo(&wg, func() {
+		var err error
+		pods, err = pod.ListPods(ctx, runtimeClient, true)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	})
+
 	var containers []*cri.Container
+	gogo.SafeGo(&wg, func() {
+		var err error
+		containers, err = container.ListContainers(ctx, runtimeClient)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	})
+
 	var containersStats []*cri.ContainerStats
-	var nodeMetrics *gen.NodeMetrics // NodeMetrics
-
-	wg.Add(4)
-
-	// Collect node-level metrics concurrently
-	go func() {
-		defer wg.Done()
+	gogo.SafeGo(&wg, func() {
 		var err error
-		nodeMetrics, err = node.Metrics(ctx, 1*time.Second, logger, topN)
+		containersStats, err = container.ListContainersStats(ctx, runtimeClient)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to collect node metrics: %v", err)
+			errs = append(errs, err)
 		}
-	}()
-
-	// List all _pod sandboxes
-	go func() {
-		defer wg.Done()
-		var err error
-		pods, err = pod.Pods(ctx, runtimeClient, true)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to list _pod sandboxes: %v", err)
-		}
-	}()
-
-	// List all containers
-	go func() {
-		defer wg.Done()
-		var err error
-		containers, err = container.Containers(ctx, runtimeClient)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to list containers: %v", err)
-		}
-	}()
-
-	// Get stats for all containers
-	go func() {
-		defer wg.Done()
-		var err error
-		containersStats, err = container.ContainersStats(ctx, runtimeClient)
-		if err != nil {
-			errChan <- fmt.Errorf("failed to list container stats: %v", err)
-		}
-	}()
+	})
 
 	wg.Wait()
-	close(errChan)
-
-	// Collect all async errors into a slice
-	var errs []error
-	for err := range errChan {
-		errs = append(errs, err)
-	}
 
 	var podsMetrics []*gen.PodMetrics
 
-	// Create a mapping from _pod ID to its associated containers
 	containerMap := make(map[string][]*cri.Container)
 	for _, _container := range containers {
 		containerMap[_container.PodSandboxId] = append(containerMap[_container.PodSandboxId], _container)
 	}
 
-	// Build _pod metrics from _pod and container data
 	for _, _pod := range pods {
 		var containersMetrics []*gen.ContainerMetrics
 		containers := containerMap[_pod.Id]
 
 		for _, _container := range containers {
-			metrics, err := container.Metrics(_container, containersStats)
+			metrics, err := container.BuildContainerMetrics(_container, containersStats)
 
 			if err != nil {
 				errs = append(errs, fmt.Errorf("failed to get _container stats for _container %s: %v", _container.Id, err))
@@ -163,12 +164,12 @@ func collectMetrics(ctx context.Context, runtimeClient cri.RuntimeServiceClient,
 			containersMetrics = append(containersMetrics, metrics)
 		}
 
-		podMetric, _ := pod.Metrics(_pod, containersMetrics)
+		podMetric, _ := pod.BuildPodMetrics(_pod, containersMetrics)
 		podsMetrics = append(podsMetrics, podMetric)
 	}
 
-	// Final assembled metrics object
 	metrics := &gen.Metrics{
+		Timestamp:   timestamp,
 		NodeMetrics: nodeMetrics,
 		PodMetrics:  podsMetrics,
 	}

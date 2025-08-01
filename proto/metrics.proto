@@ -12,11 +12,14 @@ import "proto/pod_metrics.proto";
 // It includes both node-level metrics (hardware, OS, pressure stats, etc.)
 // and pod-level metrics (for all pods and containers running on the node).
 message Metrics {
+  // Timestamp related to the start of metrics collection (Unix timestamp)
+  int64 timestamp = 1;
+
   // System-level metrics for the current node.
-  NodeMetrics node_metrics = 1;
+  NodeMetrics node_metrics = 2;
 
   // Runtime metrics for all pods and their containers scheduled on this node.
-  repeated PodMetrics pod_metrics = 2;
+  repeated PodMetrics pod_metrics = 3;
 }
 
 // MetricsService defines the bi-directional gRPC interface used to send and receive metrics

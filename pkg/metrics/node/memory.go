@@ -4,24 +4,45 @@ import (
 	"context"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/process"
+	"go.uber.org/zap"
 	"sort"
 )
 
-// topMem returns the top N memory-consuming processes currently running on the system.
-// It uses the gopsutil library to retrieve memory usage (RSS) and process names.
+// listTopMem collects memory usage information for all running processes and returns
+// the top N processes ranked by their Resident Set Size (RSS) in descending order.
+//
+// It uses gopsutil to access process information, skipping any processes for which
+// memory or name data is unavailable. The result includes PID, process name, and memory
+// usage in bytes.
 //
 // Parameters:
-//   - ctx:   context for handling timeouts or cancellations during system calls
-//   - topN:  the number of top memory-using processes to return
+//
+//   - ctx context.Context:
+//     The context used to control cancellation and deadlines for process data retrieval.
+//
+//   - topN int:
+//     The number of top memory-consuming processes to return. If fewer than topN processes
+//     are available or accessible, the result may contain fewer entries.
+//
+//   - logger *zap.Logger:
+//     Logger used for debug tracing throughout the execution.
 //
 // Returns:
-//   - A slice of *gen.ProcessMemInfo containing up to topN processes sorted by RSS in descending order
-//   - An error if the initial process list retrieval fails (individual process failures are skipped)
 //
-// Notes:
-//   - Processes that fail to report memory or name are skipped silently.
-//   - If fewer than topN valid processes are available, the result will contain less than topN items.
-func topMem(ctx context.Context, topN int) ([]*gen.ProcessMemInfo, error) {
+//   - []*gen.ProcessMemInfo:
+//     A slice of ProcessMemInfo entries sorted by memory usage (RSS) in descending order.
+//     Each entry includes the process PID, name, and memory usage in bytes.
+//
+//   - error:
+//     Returns an error if the initial retrieval of processes fails. Errors during
+//     per-process inspection (e.g., memory or name access) are silently skipped.
+func listTopMem(
+	ctx context.Context,
+	topN int,
+	logger *zap.Logger,
+) ([]*gen.ProcessMemInfo, error) {
+	logger.Debug("Start listTopMem")
+
 	// Retrieve the list of all running processes
 	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
@@ -60,6 +81,8 @@ func topMem(ctx context.Context, topN int) ([]*gen.ProcessMemInfo, error) {
 	}
 	topProcesses := make([]*gen.ProcessMemInfo, top)
 	copy(topProcesses, processesMemInfo[:top])
+
+	logger.Debug("Finish listTopMem")
 
 	return topProcesses, nil
 }

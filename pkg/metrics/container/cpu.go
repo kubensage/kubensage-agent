@@ -7,11 +7,26 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// cpuMetrics safely extracts CPU metrics from a ContainerStats object.
-// If the CPU field is nil, it returns an empty cpuMetrics struct.
-// For optional numeric values, it returns -1 if the field is missing.
-// This function ensures safe access to optional protobuf fields.
-func cpuMetrics(stats *cri.ContainerStats) *gen.CpuMetrics {
+// buildCpuMetrics constructs a *gen.CpuMetrics message from a given CRI ContainerStats.
+//
+// This function safely handles optional CPU metrics fields by checking for nil pointers
+// and wrapping them with protobuf-compatible wrappers. If the input stats do not contain
+// CPU data, it returns an empty CpuMetrics object.
+//
+// Parameters:
+//   - stats: *cri.ContainerStats
+//     The container statistics object from the CRI runtime. Expected to include CPU usage data.
+//
+// Returns:
+//   - *gen.CpuMetrics
+//     A populated CpuMetrics object with:
+//   - Timestamp: copied from stats.Cpu.Timestamp
+//   - UsageCoreNanoSeconds: wrapped value from stats.Cpu.UsageCoreNanoSeconds (optional)
+//   - UsageNanoCores: wrapped value from stats.Cpu.UsageNanoCores (optional)
+//     If stats.Cpu is nil, an empty CpuMetrics struct is returned.
+func buildCpuMetrics(
+	stats *cri.ContainerStats,
+) *gen.CpuMetrics {
 	if stats.Cpu == nil {
 		return &gen.CpuMetrics{}
 	}

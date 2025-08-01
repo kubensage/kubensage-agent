@@ -7,10 +7,32 @@ import (
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
-// memoryMetrics safely extracts memory metrics from a ContainerStats object.
-// If stats.Memory is nil, it returns an empty struct with zeroed values.
-// Optional fields are safely converted to int64 using a fallback of -1.
-func memoryMetrics(stats *cri.ContainerStats) *gen.MemoryMetrics {
+// buildMemoryMetrics constructs a *gen.MemoryMetrics message from the Memory section
+// of a CRI ContainerStats object.
+//
+// This function safely handles missing or optional fields. If the Memory section is nil,
+// it returns an empty MemoryMetrics struct. All memory-related counters are converted to
+// protobuf UInt64Value wrappers only if present.
+//
+// Parameters:
+//   - stats: *cri.ContainerStats
+//     The container statistics provided by the CRI runtime, including memory usage metrics.
+//
+// Returns:
+//   - *gen.MemoryMetrics
+//     A populated MemoryMetrics object with the following fields:
+//   - Timestamp: from stats.Memory.Timestamp
+//   - WorkingSetBytes: memory used minus inactive pages (optional)
+//   - AvailableBytes: memory available for allocation (optional)
+//   - UsageBytes: total memory usage (optional)
+//   - RssBytes: resident set size (optional)
+//   - PageFaults: number of page faults (optional)
+//   - MajorPageFaults: number of major page faults (optional)
+//     If stats.Memory is nil, returns an empty MemoryMetrics struct.
+func buildMemoryMetrics(
+	stats *cri.ContainerStats,
+) *gen.MemoryMetrics {
+
 	if stats.Memory == nil {
 		return &gen.MemoryMetrics{}
 	}
