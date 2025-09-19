@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"fmt"
+	"time"
+
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -18,15 +20,19 @@ import (
 // Returns:
 //   - []*cri.Container: a slice of container descriptors, each containing metadata and runtime state.
 //   - error: if the RPC call fails or returns an unexpected response.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func ListContainers(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
-) ([]*cri.Container, error) {
+) ([]*cri.Container, error, time.Duration) {
+	start := time.Now()
+
 	resp, err := runtimeClient.ListContainers(ctx, &cri.ListContainersRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list containers: %v", err.Error())
+		return nil, fmt.Errorf("failed to list containers: %v", err.Error()), time.Since(start)
 	}
-	return resp.Containers, nil
+
+	return resp.Containers, nil, time.Since(start)
 }
 
 // ListContainersStats retrieves runtime statistics for all containers managed by the CRI runtime.
@@ -41,20 +47,24 @@ func ListContainers(
 // Returns:
 //   - []*cri.ContainerStats: a slice of container statistics, each representing a container's resource usage.
 //   - error: if the RPC call fails or no statistics are returned.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func ListContainersStats(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
-) ([]*cri.ContainerStats, error) {
+) ([]*cri.ContainerStats, error, time.Duration) {
+	start := time.Now()
+
 	stats, err := runtimeClient.ListContainerStats(ctx, &cri.ListContainerStatsRequest{})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to list container stats: %v", err.Error())
+		return nil, fmt.Errorf("failed to list container stats: %v", err.Error()), time.Since(start)
 	}
 
 	if len(stats.Stats) == 0 {
-		return nil, fmt.Errorf("no container stats found")
+		return nil, fmt.Errorf("no container stats found"), time.Since(start)
 	}
 
-	return stats.Stats, nil
+	return stats.Stats, nil, time.Since(start)
 }
 
 // RetrieveContainerStatsByContainerId searches for statistics of a specific container by its ID.
@@ -69,14 +79,17 @@ func ListContainersStats(
 // Returns:
 //   - *cri.ContainerStats: the matching stats entry, if found.
 //   - error: if no matching container stats are found for the given ID.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func RetrieveContainerStatsByContainerId(
 	containersStats []*cri.ContainerStats,
 	containerId string,
-) (*cri.ContainerStats, error) {
+) (*cri.ContainerStats, error, time.Duration) {
+	start := time.Now()
+
 	for _, s := range containersStats {
 		if s.Attributes.Id == containerId {
-			return s, nil
+			return s, nil, time.Since(start)
 		}
 	}
-	return nil, fmt.Errorf("no container stats found for container %q", containerId)
+	return nil, fmt.Errorf("no container stats found for container %q", containerId), time.Since(start)
 }

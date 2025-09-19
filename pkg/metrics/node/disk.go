@@ -1,13 +1,14 @@
 package node
 
 import (
+	"strings"
+	"time"
+
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/disk"
-	"go.uber.org/zap"
-	"strings"
 )
 
-// ListDiskUsages returns disk usage metrics for each valid, real filesystem mountpoint
+// listDiskUsages returns disk usage metrics for each valid, real filesystem mountpoint
 // provided in the list of disk partitions.
 //
 // It filters out virtual or non-persistent filesystems (e.g., tmpfs, procfs) using
@@ -22,17 +23,13 @@ import (
 //   - partitions []disk.PartitionStat:
 //     A slice of partition records, typically retrieved via gopsutil's disk.Partitions().
 //
-//   - logger *zap.Logger:
-//     Logger used for debug-level tracing of method entry, exit, and internal decisions.
-//
 // Returns:
-//   - []*gen.DiskUsage:
-//     A slice of usage summaries, one for each real filesystem with retrievable stats.
-func ListDiskUsages(
+//   - []*gen.DiskUsage: a slice of usage summaries, one for each real filesystem with retrievable stats.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
+func listDiskUsages(
 	partitions []disk.PartitionStat,
-	logger *zap.Logger,
-) []*gen.DiskUsage {
-	logger.Debug("Start ListDiskUsages")
+) ([]*gen.DiskUsage, time.Duration) {
+	start := time.Now()
 
 	diskUsages := make([]*gen.DiskUsage, 0, len(partitions))
 
@@ -57,9 +54,7 @@ func ListDiskUsages(
 		})
 	}
 
-	logger.Debug("End ListDiskUsages")
-
-	return diskUsages
+	return diskUsages, time.Since(start)
 }
 
 // buildDiskIOSummary aggregates global disk I/O statistics from a map of per-device counters.
@@ -73,20 +68,18 @@ func ListDiskUsages(
 //   - counters map[string]disk.IOCountersStat:
 //     A map of device names to I/O statistics, typically retrieved from gopsutil's disk.IOCountersWithContext().
 //
-//   - logger *zap.Logger:
-//     Logger used for debug tracing during the aggregation process.
-//
 // Returns:
 //   - *gen.DiskIOSummary:
 //     A protobuf-compatible summary containing total read/write byte counts and operation counts
 //     across all relevant block devices.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildDiskIOSummary(
 	counters map[string]disk.IOCountersStat,
-	logger *zap.Logger,
-) *gen.DiskIOSummary {
-	logger.Debug("Start buildDiskIOSummary")
+) (*gen.DiskIOSummary, time.Duration) {
+	start := time.Now()
 
 	var readBytes, writeBytes, readOps, writeOps uint64
+
 	for name, stat := range counters {
 		if strings.HasPrefix(name, "loop") || strings.HasPrefix(name, "ram") {
 			continue
@@ -105,9 +98,7 @@ func buildDiskIOSummary(
 		TotalWriteOps:   writeOps,
 	}
 
-	logger.Debug("End buildDiskIOSummary")
-
-	return summary
+	return summary, time.Since(start)
 }
 
 // isRealFilesystem determines whether a given filesystem type represents a persistent

@@ -3,11 +3,12 @@ package metrics
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/kubensage/go-common/datastructure"
 	"github.com/kubensage/kubensage-agent/pkg/cli"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
-	"time"
 )
 
 // SendOnce attempts to send one batch of metrics from the ring buffer over the provided gRPC stream.
@@ -43,29 +44,49 @@ func SendOnce(
 	agentCfg *cli.AgentConfig,
 	logger *zap.Logger,
 ) error {
-	var err error
+	start := time.Now()
 
+	var err error
 	if stream == nil {
-		logger.Debug("Opening metrics stream")
+		logger.Info("opening metrics stream")
 		stream, err = relayClient.SendMetrics(ctx)
 		if err != nil {
-			logger.Warn("Unable to open stream", zap.Error(err))
+			logger.Warn("unable to open stream", zap.Error(err))
 			time.Sleep(agentCfg.MainLoopDurationSeconds)
 			return err
 		}
-		logger.Info("Stream opened successfully")
-
-		if err := sendAllBuffer(buffer, stream, logger); err != nil {
-			logger.Error("Failed to send buffered metrics", zap.Error(err))
-			stream = nil
-			return err
-		}
+		logger.Info("stream opened successfully")
 	}
 
-	if err := popAndSend(buffer, stream, logger); err != nil {
-		logger.Error("Metric send failed", zap.Error(err))
+	// Prima di inviare il prossimo, flush dell’intero buffer
+	flushStart := time.Now()
+	flushed, err := sendAllBuffer(buffer, stream, logger)
+	if err != nil {
+		logger.Error("failed to send buffered metrics",
+			zap.Int("flushed_before_error", flushed),
+			zap.Duration("flush_duration", time.Since(flushStart)),
+			zap.Error(err),
+		)
+
 		stream = nil
+		return err
 	}
+
+	sendStart := time.Now()
+	if err := popAndSend(buffer, stream, logger); err != nil {
+		logger.Error("metric send failed",
+			zap.Duration("send_duration", time.Since(sendStart)),
+			zap.Error(err),
+		)
+		stream = nil
+		return err
+	}
+
+	logger.Info("metrics send cycle completed",
+		zap.Int("flushed_count", flushed),
+		zap.Duration("flush_duration", time.Since(flushStart)),
+		zap.Duration("cycle_total_duration", time.Since(start)),
+	)
 
 	return nil
 }
@@ -91,15 +112,32 @@ func sendAllBuffer(
 	buffer *datastructure.RingBuffer[*gen.Metrics],
 	stream gen.MetricsService_SendMetricsClient,
 	logger *zap.Logger,
-) error {
-	logger.Debug("Sending all buffered metrics")
+) (int, error) {
+	if buffer == nil {
+		return 0, errors.New("buffer is nil")
+	}
 
+	if buffer.Len() == 0 {
+		logger.Debug("buffer empty (nothing to flush)")
+		return 0, nil
+	}
+
+	logger.Info("flushing buffered metrics", zap.Int("buffer_len_start", buffer.Len()))
+	start := time.Now()
+
+	count := 0
 	for buffer.Len() > 0 {
 		if err := popAndSend(buffer, stream, logger); err != nil {
-			return err
+			return count, err
 		}
+		count++
 	}
-	return nil
+
+	logger.Info("buffer flushed",
+		zap.Int("flushed_count", count),
+		zap.Duration("flush_duration", time.Since(start)),
+	)
+	return count, nil
 }
 
 // popAndSend attempts to send a single Metrics message from the ring buffer over a gRPC stream.
@@ -131,24 +169,23 @@ func popAndSend(
 		return errors.New("buffer is nil")
 	}
 	if buffer.Len() == 0 {
-		logger.Debug("Buffer empty")
+		logger.Debug("buffer empty")
 		return nil
 	}
 
 	_, pop, ok := buffer.Pop()
 	if !ok {
-		logger.Debug("Buffer empty after check (race condition?)")
+		logger.Debug("buffer empty after check (race condition?)")
 		return nil
 	}
 
-	err := stream.Send(pop)
-	if err != nil {
-		logger.Error("Stream send failed", zap.Error(err))
+	if err := stream.Send(pop); err != nil {
+		logger.Error("stream send failed", zap.Error(err))
 		buffer.Readd(pop)
-		logger.Debug("Metric re-queued", zap.Int("buffer_len", buffer.Len()))
+		logger.Debug("metric re-queued", zap.Int("buffer_len", buffer.Len()))
 		return err
 	}
 
-	logger.Debug("Metric sent", zap.Int("buffer_len", buffer.Len()))
+	logger.Debug("metric sent", zap.Int("buffer_len", buffer.Len()))
 	return nil
 }

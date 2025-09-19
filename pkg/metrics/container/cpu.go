@@ -1,6 +1,8 @@
 package container
 
 import (
+	"time"
+
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -18,17 +20,15 @@ import (
 //     The container statistics object from the CRI runtime. Expected to include CPU usage data.
 //
 // Returns:
-//   - *gen.CpuMetrics
-//     A populated CpuMetrics object with:
-//   - Timestamp: copied from stats.Cpu.Timestamp
-//   - UsageCoreNanoSeconds: wrapped value from stats.Cpu.UsageCoreNanoSeconds (optional)
-//   - UsageNanoCores: wrapped value from stats.Cpu.UsageNanoCores (optional)
-//     If stats.Cpu is nil, an empty CpuMetrics struct is returned.
+//   - *gen.CpuMetrics: A populated CpuMetrics object with:
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildCpuMetrics(
 	stats *cri.ContainerStats,
-) *gen.CpuMetrics {
+) (*gen.CpuMetrics, time.Duration) {
+	start := time.Now()
+
 	if stats.Cpu == nil {
-		return &gen.CpuMetrics{}
+		return &gen.CpuMetrics{}, time.Since(start)
 	}
 
 	var usageCoreNanoSeconds, usageNanoCores *wrapperspb.UInt64Value
@@ -47,5 +47,5 @@ func buildCpuMetrics(
 		UsageNanoCores:       usageNanoCores,
 	}
 
-	return metrics
+	return metrics, time.Since(start)
 }

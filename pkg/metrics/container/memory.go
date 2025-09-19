@@ -1,6 +1,8 @@
 package container
 
 import (
+	"time"
+
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -19,22 +21,15 @@ import (
 //     The container statistics provided by the CRI runtime, including memory usage metrics.
 //
 // Returns:
-//   - *gen.MemoryMetrics
-//     A populated MemoryMetrics object with the following fields:
-//   - Timestamp: from stats.Memory.Timestamp
-//   - WorkingSetBytes: memory used minus inactive pages (optional)
-//   - AvailableBytes: memory available for allocation (optional)
-//   - UsageBytes: total memory usage (optional)
-//   - RssBytes: resident set size (optional)
-//   - PageFaults: number of page faults (optional)
-//   - MajorPageFaults: number of major page faults (optional)
-//     If stats.Memory is nil, returns an empty MemoryMetrics struct.
+//   - *gen.MemoryMetrics: A populated MemoryMetrics object with the following fields:
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildMemoryMetrics(
 	stats *cri.ContainerStats,
-) *gen.MemoryMetrics {
+) (*gen.MemoryMetrics, time.Duration) {
+	start := time.Now()
 
 	if stats.Memory == nil {
-		return &gen.MemoryMetrics{}
+		return &gen.MemoryMetrics{}, time.Since(start)
 	}
 
 	var workingSetBytes, availableBytes, usageBytes, rssBytes, pageFaults, majorPageFaults *wrapperspb.UInt64Value
@@ -73,5 +68,5 @@ func buildMemoryMetrics(
 		MajorPageFaults: majorPageFaults,
 	}
 
-	return metrics
+	return metrics, time.Since(start)
 }

@@ -2,6 +2,9 @@ package node
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/kubensage/go-common/go"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -11,8 +14,6 @@ import (
 	"github.com/shirou/gopsutil/v3/net"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"sync"
-	"time"
 )
 
 // BuildNodeMetrics collects system-level metrics from the node,
@@ -40,6 +41,7 @@ import (
 // Returns:
 //   - *gen.NodeMetrics: Complete set of collected node-level metrics
 //   - []error: List of non-fatal errors encountered during metric collection
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 //
 // If one or more collectors fail, partial results are still returned.
 // All collectors are safe and tolerant to failures; they append errors instead of panicking.
@@ -48,150 +50,199 @@ func BuildNodeMetrics(
 	interval time.Duration,
 	logger *zap.Logger,
 	topN int,
-) (*gen.NodeMetrics, []error) {
-	logger.Debug("Start to collect metrics")
+) (*gen.NodeMetrics, []error, time.Duration) {
+	start := time.Now()
+
+	// Durations (RPC/system calls)
+	var hostInfoWithContextDuration time.Duration
+	var cpuInfoWithContextDuration time.Duration
+	var cpuPercentWithContextDuration time.Duration
+	var totalCpuPercentWithContextDuration time.Duration
+	var virtualMemoryWithContextDuration time.Duration
+	var netIOCountersWithContextDuration time.Duration
+	var diskIOCountersWithContextDuration time.Duration
+	var diskPartitionsWithContextDuration time.Duration
+	var netInterfacesWithContextDuration time.Duration
+
+	// Durations (post-processing/build)
+	var listCpuInfosDuration time.Duration
+	var buildNetUsageDuration time.Duration
+	var buildDiskIOSummaryDuration time.Duration
+	var listDiskUsagesDuration time.Duration
+	var listTopMemDuration time.Duration
+	var listNetworkInterfacesDuration time.Duration
+	var buildCpuPsiMetricsDuration time.Duration
+	var buildMemPsiMetricsDuration time.Duration
+	var buildIOPsiMetricsDuration time.Duration
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	var errs []error
+
+	addErr := func(e error) {
+		if e == nil {
+			return
+		}
+		mu.Lock()
+		errs = append(errs, e)
+		mu.Unlock()
+	}
 
 	var info *host.InfoStat
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start host.InfoWithContext")
 		info, err = host.InfoWithContext(ctx)
+		hostInfoWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
-		logger.Debug("Finish host.InfoWithContext")
 	})
 
 	var cpuInfo []cpu.InfoStat
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start cpu.InfoWithContext")
 		cpuInfo, err = cpu.InfoWithContext(ctx)
+		cpuInfoWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
-		logger.Debug("Finish cpu.InfoWithContext")
 	})
 
 	var cpuPercents []float64
 	var _cpuInfos []*gen.CpuInfo
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start cpu.PercentWithContext")
 		cpuPercents, err = cpu.PercentWithContext(ctx, interval, true)
+		cpuPercentWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		} else {
-			_cpuInfos = listCpuInfos(cpuInfo, cpuPercents, logger)
+			_cpuInfos, listCpuInfosDuration = listCpuInfos(cpuInfo, cpuPercents)
 		}
-		logger.Debug("Finish cpu.PercentWithContext")
 	})
 
 	var totalCpuPercent []float64
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start cpu.PercentWithContext")
 		totalCpuPercent, err = cpu.PercentWithContext(ctx, interval, false)
+		totalCpuPercentWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
-		logger.Debug("Finish cpu.PercentWithContext")
 	})
 
 	var memInfo *mem.VirtualMemoryStat
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start mem.VirtualMemoryWithContext")
 		memInfo, err = mem.VirtualMemoryWithContext(ctx)
+		virtualMemoryWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
-		logger.Debug("Finish mem.VirtualMemoryWithContext")
 	})
 
 	var netInfoIO []net.IOCountersStat
 	var _netUsage *gen.NetUsage
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start net.IOCountersWithContext")
 		netInfoIO, err = net.IOCountersWithContext(ctx, false)
+		netIOCountersWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		} else {
-			_netUsage = buildNetUsage(netInfoIO[0], logger)
+			_netUsage, buildNetUsageDuration = buildNetUsage(netInfoIO[0])
 		}
-		logger.Debug("Finish net.IOCountersWithContext")
 	})
 
 	var counters map[string]disk.IOCountersStat
 	var _diskIoSummary *gen.DiskIOSummary
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start disk.IOCountersWithContext")
 		counters, err = disk.IOCountersWithContext(ctx)
+		diskIOCountersWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		} else {
-			_diskIoSummary = buildDiskIOSummary(counters, logger)
+			_diskIoSummary, buildDiskIOSummaryDuration = buildDiskIOSummary(counters)
 		}
-		logger.Debug("Finish disk.IOCountersWithContext")
 	})
 
 	var partitions []disk.PartitionStat
 	var _diskUsages []*gen.DiskUsage
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start disk.PartitionsWithContext")
 		partitions, err = disk.PartitionsWithContext(ctx, true)
+		diskPartitionsWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		} else {
-			_diskUsages = ListDiskUsages(partitions, logger)
+			_diskUsages, listDiskUsagesDuration = listDiskUsages(partitions)
 		}
-		logger.Debug("Finish disk.PartitionsWithContext")
 	})
 
 	var processesMemInfo []*gen.ProcessMemInfo
 	gogo.SafeGo(&wg, func() {
 		var err error
-		logger.Debug("Start ")
-		processesMemInfo, err = listTopMem(ctx, topN, logger)
+		processesMemInfo, err, listTopMemDuration = listTopMem(ctx, topN)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
-		logger.Debug("Finish ")
 	})
 
 	var interfaces []net.InterfaceStat
 	var _networkInterfaces []*gen.InterfaceStat
 	var ipv4, ipv6 string
 	gogo.SafeGo(&wg, func() {
+		start := time.Now()
+
 		var err error
-		logger.Debug("Start net.InterfacesWithContext")
 		interfaces, err = net.InterfacesWithContext(ctx)
+		netInterfacesWithContextDuration = time.Since(start)
+
 		if err != nil {
-			errs = append(errs, err)
+			addErr(err)
 		}
 
-		_networkInterfaces = listNetworkInterfaces(interfaces, logger)
-		ipv4, ipv6 = buildPrimaryIPs(_networkInterfaces, logger)
-		logger.Debug("Finish net.InterfacesWithContext")
+		_networkInterfaces, listNetworkInterfacesDuration = listNetworkInterfaces(interfaces)
+		ipv4, ipv6 = buildPrimaryIPs(_networkInterfaces)
 	})
 
 	var cpuPsi, memPsi, ioPsi *gen.PsiMetrics
 	gogo.SafeGo(&wg, func() {
-		cpuPsi = buildPsiMetrics("/proc/pressure/cpu", logger)
+		cpuPsi, buildCpuPsiMetricsDuration = buildPsiMetrics("/proc/pressure/cpu", logger)
 	})
 
 	gogo.SafeGo(&wg, func() {
-		memPsi = buildPsiMetrics("/proc/pressure/memory", logger)
+		memPsi, buildMemPsiMetricsDuration = buildPsiMetrics("/proc/pressure/memory", logger)
 	})
 
 	gogo.SafeGo(&wg, func() {
-		ioPsi = buildPsiMetrics("/proc/pressure/io", logger)
+		ioPsi, buildIOPsiMetricsDuration = buildPsiMetrics("/proc/pressure/io", logger)
 	})
 
 	wg.Wait()
@@ -239,7 +290,31 @@ func BuildNodeMetrics(
 		nodeInfo.PrimaryIpv6 = wrapperspb.String(ipv6)
 	}
 
-	logger.Debug("Finish to collect metrics")
+	total := time.Since(start)
 
-	return nodeInfo, errs
+	logger.Debug("node metrics durations",
+		zap.Duration("host_info", hostInfoWithContextDuration),
+		zap.Duration("cpu_info", cpuInfoWithContextDuration),
+		zap.Duration("cpu_percent_percpu", cpuPercentWithContextDuration),
+		zap.Duration("cpu_percent_total", totalCpuPercentWithContextDuration),
+		zap.Duration("virtual_memory", virtualMemoryWithContextDuration),
+		zap.Duration("net_iocounters", netIOCountersWithContextDuration),
+		zap.Duration("disk_iocounters", diskIOCountersWithContextDuration),
+		zap.Duration("disk_partitions", diskPartitionsWithContextDuration),
+		zap.Duration("net_interfaces", netInterfacesWithContextDuration),
+
+		zap.Duration("list_cpu_infos", listCpuInfosDuration),
+		zap.Duration("build_net_usage", buildNetUsageDuration),
+		zap.Duration("build_disk_io_summary", buildDiskIOSummaryDuration),
+		zap.Duration("list_disk_usages", listDiskUsagesDuration),
+		zap.Duration("list_top_mem", listTopMemDuration),
+		zap.Duration("list_network_interfaces", listNetworkInterfacesDuration),
+		zap.Duration("build_cpu_psi", buildCpuPsiMetricsDuration),
+		zap.Duration("build_mem_psi", buildMemPsiMetricsDuration),
+		zap.Duration("build_io_psi", buildIOPsiMetricsDuration),
+
+		zap.Duration("total", total),
+	)
+
+	return nodeInfo, errs, time.Since(start)
 }

@@ -2,8 +2,9 @@ package cli
 
 import (
 	"flag"
-	"go.uber.org/zap"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // AgentConfig holds runtime configuration parameters for the agent,
@@ -48,12 +49,12 @@ func RegisterAgentFlags(
 
 	return func(logger *zap.Logger) *AgentConfig {
 		if *relayAddress == "" {
-			logger.Fatal("Missing required flag: --relay-address")
+			logger.Fatal("missing required flag: --relay-address")
 		}
 
 		return &AgentConfig{
 			RelayAddress:            *relayAddress,
-			MainLoopDurationSeconds: time.Duration(*mainLoopDuration) * time.Millisecond,
+			MainLoopDurationSeconds: time.Duration(*mainLoopDuration) * time.Second,
 			BufferRetention:         time.Duration(*bufferRetention) * time.Minute,
 			TopN:                    *topN,
 		}
