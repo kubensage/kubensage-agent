@@ -1,10 +1,11 @@
 package node
 
 import (
+	"strings"
+	"time"
+
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/net"
-	"go.uber.org/zap"
-	"strings"
 )
 
 // buildNetUsage converts a gopsutil net.IOCountersStat into a gen.NetUsage proto message.
@@ -14,15 +15,14 @@ import (
 //
 // Parameters:
 //   - stat: net.IOCountersStat with network counters from gopsutil
-//   - logger: Logger used for debug messages
 //
 // Returns:
 //   - *gen.NetUsage containing summarized network metrics
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildNetUsage(
 	stat net.IOCountersStat,
-	logger *zap.Logger,
-) *gen.NetUsage {
-	logger.Debug("Start buildNetUsage")
+) (*gen.NetUsage, time.Duration) {
+	start := time.Now()
 
 	netUsage := &gen.NetUsage{
 		TotalBytesSent:       stat.BytesSent,
@@ -37,9 +37,7 @@ func buildNetUsage(
 		TotalFifoErrOut:      stat.Fifoout,
 	}
 
-	logger.Debug("Finish buildNetUsage")
-
-	return netUsage
+	return netUsage, time.Since(start)
 }
 
 // ListNetworkInterfaces maps gopsutil network interfaces into proto InterfaceStat messages.
@@ -54,11 +52,11 @@ func buildNetUsage(
 //
 // Returns:
 //   - []*gen.InterfaceStat representing all valid system interfaces
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func listNetworkInterfaces(
 	interfaces net.InterfaceStatList,
-	logger *zap.Logger,
-) []*gen.InterfaceStat {
-	logger.Debug("Start listNetworkInterfaces")
+) ([]*gen.InterfaceStat, time.Duration) {
+	start := time.Now()
 
 	networkInterfaces := make([]*gen.InterfaceStat, 0, len(interfaces))
 
@@ -78,9 +76,7 @@ func listNetworkInterfaces(
 		})
 	}
 
-	logger.Debug("Finish listNetworkInterfaces")
-
-	return networkInterfaces
+	return networkInterfaces, time.Since(start)
 }
 
 // buildPrimaryIPs determines the primary IPv4 and IPv6 addresses from a list of interfaces.
@@ -97,10 +93,7 @@ func listNetworkInterfaces(
 //   - ipv6Addr: Primary IPv6 address as string (empty if not found)
 func buildPrimaryIPs(
 	interfaces []*gen.InterfaceStat,
-	logger *zap.Logger,
 ) (string, string) {
-	logger.Debug("Start buildPrimaryIPs")
-
 	skipPrefixes := []string{"lo", "cali", "veth", "docker", "br-", "tunl", "flannel"}
 
 	var ipv4Addr, ipv6Addr string
@@ -151,8 +144,6 @@ func buildPrimaryIPs(
 			}
 		}
 	}
-
-	logger.Debug("Finish buildPrimaryIPs")
 
 	return ipv4Addr, ipv6Addr
 }

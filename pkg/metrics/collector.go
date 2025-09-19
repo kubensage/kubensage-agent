@@ -3,6 +3,9 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/kubensage/go-common/datastructure"
 	gogo "github.com/kubensage/go-common/go"
 	"github.com/kubensage/kubensage-agent/pkg/cli"
@@ -12,8 +15,6 @@ import (
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"go.uber.org/zap"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
-	"sync"
-	"time"
 )
 
 // CollectOnce performs a single metrics collection cycle.
@@ -46,20 +47,48 @@ func CollectOnce(
 	agentCfg *cli.AgentConfig,
 	logger *zap.Logger,
 ) []error {
-	logger.Debug("Collecting metrics")
+	start := time.Now()
+	logger.Info("collect start", zap.Int("topN", agentCfg.TopN))
+
 	metricsData, errs := collect(ctx, runtimeClient, logger, agentCfg.TopN)
-	if errs != nil {
-		var errStrs []string
+
+	// Se errori, log ERROR + breve riepilogo INFO
+	if errs != nil && len(errs) > 0 {
+		errStrs := make([]string, 0, len(errs))
 		for _, e := range errs {
 			errStrs = append(errStrs, e.Error())
 		}
-		logger.Error("Metric collection errors", zap.Strings("errors", errStrs))
+		logger.Error("metric collection errors", zap.Strings("errors", errStrs))
+	}
+
+	// Evita panic se metricsData è nil
+	if metricsData == nil {
+		logger.Info("collect finished (no metrics)", zap.Duration("duration", time.Since(start)))
 		return errs
 	}
-	buffer.Add(metricsData)
-	logger.Debug("metrics added to buffer", zap.Int("buffer_len", buffer.Len()))
 
-	return nil
+	podsCount := 0
+	containersCount := 0
+	if metricsData.PodMetrics != nil {
+		podsCount = len(metricsData.PodMetrics)
+		for _, pm := range metricsData.PodMetrics {
+			if pm != nil && pm.ContainerMetrics != nil {
+				containersCount += len(pm.ContainerMetrics)
+			}
+		}
+	}
+
+	buffer.Add(metricsData)
+
+	logger.Info("collect enqueued",
+		zap.Int64("timestamp", metricsData.Timestamp),
+		zap.Int("pods_count", podsCount),
+		zap.Int("containers_count", containersCount),
+		zap.Int("buffer_len", buffer.Len()),
+		zap.Duration("duration", time.Since(start)),
+	)
+
+	return errs
 }
 
 // collect gathers both node-level and container-level metrics in parallel,
@@ -97,18 +126,46 @@ func collect(
 	logger *zap.Logger,
 	topN int,
 ) (*gen.Metrics, []error) {
+	start := time.Now()
 	timestamp := time.Now().Unix()
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	var errs []error
 
-	var nodeMetrics *gen.NodeMetrics // NodeMetrics
+	addErr := func(e error) {
+		if e == nil {
+			return
+		}
+		mu.Lock()
+		errs = append(errs, e)
+		mu.Unlock()
+	}
+
+	// Durations (macro)
+	var buildNodeMetricsDuration time.Duration
+	var listPodsDuration time.Duration
+	var listContainerDuration time.Duration
+	var listContainersStatsDuration time.Duration
+
+	// Durations (post-processing)
+	var buildContainerMetricsTotalDuration time.Duration
+	var buildPodMetricsTotalDuration time.Duration
+
+	// Per-debug: container più lento
+	var slowestContainerID string
+	var slowestContainerDuration time.Duration
+
+	// ===== parallel fetch =====
+	var nodeMetrics *gen.NodeMetrics
 	gogo.SafeGo(&wg, func() {
-		var errs []error
-		nodeMetrics, errs = node.BuildNodeMetrics(ctx, 0*time.Second, logger, topN)
-		if errs != nil {
-			for _, e := range errs {
-				errs = append(errs, e)
+		var subErrs []error
+		var d time.Duration
+		nodeMetrics, subErrs, d = node.BuildNodeMetrics(ctx, 0*time.Second, logger, topN)
+		buildNodeMetricsDuration = d
+		if subErrs != nil {
+			for _, e := range subErrs {
+				addErr(e)
 			}
 		}
 	})
@@ -116,56 +173,99 @@ func collect(
 	var pods []*cri.PodSandbox
 	gogo.SafeGo(&wg, func() {
 		var err error
-		pods, err = pod.ListPods(ctx, runtimeClient, true)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		var d time.Duration
+		pods, err, d = pod.ListPods(ctx, runtimeClient, true)
+		listPodsDuration = d
+		addErr(err)
 	})
 
 	var containers []*cri.Container
 	gogo.SafeGo(&wg, func() {
 		var err error
-		containers, err = container.ListContainers(ctx, runtimeClient)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		var d time.Duration
+		containers, err, d = container.ListContainers(ctx, runtimeClient)
+		listContainerDuration = d
+		addErr(err)
 	})
 
 	var containersStats []*cri.ContainerStats
 	gogo.SafeGo(&wg, func() {
 		var err error
-		containersStats, err = container.ListContainersStats(ctx, runtimeClient)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		var d time.Duration
+		containersStats, err, d = container.ListContainersStats(ctx, runtimeClient)
+		listContainersStatsDuration = d
+		addErr(err)
 	})
 
 	wg.Wait()
 
+	// ===== correlate & build =====
 	var podsMetrics []*gen.PodMetrics
 
 	containerMap := make(map[string][]*cri.Container)
-	for _, _container := range containers {
-		containerMap[_container.PodSandboxId] = append(containerMap[_container.PodSandboxId], _container)
+	for _, c := range containers {
+		containerMap[c.PodSandboxId] = append(containerMap[c.PodSandboxId], c)
 	}
 
-	for _, _pod := range pods {
+	for _, p := range pods {
 		var containersMetrics []*gen.ContainerMetrics
-		containers := containerMap[_pod.Id]
+		cs := containerMap[p.Id]
 
-		for _, _container := range containers {
-			metrics, err := container.BuildContainerMetrics(_container, containersStats)
-
+		for _, c := range cs {
+			metrics, err, d := container.BuildContainerMetrics(c, containersStats, logger)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("failed to get _container stats for _container %s: %v", _container.Id, err))
+				addErr(fmt.Errorf("failed to get container stats for container %s: %v", c.Id, err))
 				continue
 			}
-
 			containersMetrics = append(containersMetrics, metrics)
+
+			buildContainerMetricsTotalDuration += d
+			if d > slowestContainerDuration {
+				slowestContainerDuration = d
+				slowestContainerID = c.Id
+			}
 		}
 
-		podMetric, _ := pod.BuildPodMetrics(_pod, containersMetrics)
+		podStart := time.Now()
+		podMetric, _ := pod.BuildPodMetrics(p, containersMetrics)
+		buildPodMetricsTotalDuration += time.Since(podStart)
+
 		podsMetrics = append(podsMetrics, podMetric)
+	}
+
+	totalDuration := time.Since(start)
+
+	logger.Debug("collect summary",
+		zap.Int64("timestamp", timestamp),
+		zap.Int("pods_count", len(pods)),
+		zap.Int("containers_count", len(containers)),
+		zap.Int("containers_stats_count", len(containersStats)),
+
+		zap.Duration("build_node_metrics", buildNodeMetricsDuration),
+		zap.Duration("list_pods", listPodsDuration),
+		zap.Duration("list_containers", listContainerDuration),
+		zap.Duration("list_containers_stats", listContainersStatsDuration),
+
+		zap.Duration("build_container_metrics_total", buildContainerMetricsTotalDuration),
+		zap.Duration("build_pod_metrics_total", buildPodMetricsTotalDuration),
+
+		zap.String("slowest_container_id", slowestContainerID),
+		zap.Duration("slowest_container_duration", slowestContainerDuration),
+
+		zap.Duration("total_duration", totalDuration),
+	)
+
+	if len(errs) > 0 {
+		msgs := make([]string, 0, len(errs))
+		for _, e := range errs {
+			msgs = append(msgs, e.Error())
+		}
+		logger.Info("collect completed with errors",
+			zap.Int("errors_count", len(errs)),
+			zap.Strings("errors", msgs),
+		)
+	} else {
+		logger.Info("collect completed successfully")
 	}
 
 	metrics := &gen.Metrics{

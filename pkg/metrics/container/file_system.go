@@ -1,6 +1,8 @@
 package container
 
 import (
+	"time"
+
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -20,18 +22,15 @@ import (
 //     The container statistics from the CRI runtime, expected to include filesystem usage data.
 //
 // Returns:
-//   - *gen.FileSystemMetrics
-//     A populated FileSystemMetrics object with:
-//   - Timestamp: from WritableLayer.Timestamp
-//   - UsedBytes: wrapped value from WritableLayer.UsedBytes (optional)
-//   - InodesUsed: wrapped value from WritableLayer.InodesUsed (optional)
-//   - Mountpoint: from WritableLayer.FsId.Mountpoint if available, empty otherwise.
-//     If WritableLayer is nil, an empty FileSystemMetrics struct is returned.
+//   - *gen.FileSystemMetrics:  A populated FileSystemMetrics object with:
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildFileSystemMetrics(
 	stats *cri.ContainerStats,
-) *gen.FileSystemMetrics {
+) (*gen.FileSystemMetrics, time.Duration) {
+	start := time.Now()
+
 	if stats.WritableLayer == nil {
-		return &gen.FileSystemMetrics{}
+		return &gen.FileSystemMetrics{}, time.Since(start)
 	}
 
 	var usedBytes, inodesUsed *wrapperspb.UInt64Value
@@ -56,5 +55,5 @@ func buildFileSystemMetrics(
 		metrics.Mountpoint = ""
 	}
 
-	return metrics
+	return metrics, time.Since(start)
 }

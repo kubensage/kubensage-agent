@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/kubensage/go-common/datastructure"
-	"github.com/kubensage/kubensage-agent/proto/gen"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/kubensage/go-common/datastructure"
+	"github.com/kubensage/kubensage-agent/proto/gen"
 
 	"github.com/kubensage/go-common/cli"
 	"github.com/kubensage/go-common/log"
@@ -55,11 +56,11 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
-		logger.Warn("Shutdown signal received")
+		logger.Warn("shutdown signal received")
 		cancel()
 	}()
 
-	logger.Info("Discovering CRI socket...")
+	logger.Info("discovering CRI socket")
 	criSocket, err := discovery.CriSocketDiscovery()
 	if err != nil {
 		logger.Fatal("CRI socket discovery failed", zap.Error(err))
@@ -68,13 +69,13 @@ func main() {
 
 	runtimeClient, criConn := utils.SetupCRIConnection(criSocket, logger)
 	defer func() {
-		logger.Info("Closing CRI connection")
+		logger.Info("closing CRI connection")
 		_ = criConn.Close()
 	}()
 
 	relayClient, relayConn := utils.SetupRelayConnection(agentCfg.RelayAddress, logger)
 	defer func() {
-		logger.Info("Closing relay connection")
+		logger.Info("closing relay connection")
 		_ = relayConn.Close()
 	}()
 
@@ -103,13 +104,13 @@ func main() {
 			errors := metrics.CollectOnce(ctx, runtimeClient, buffer, agentCfg, collectorLogger)
 
 			if errors != nil {
-				logger.Error("Errors while collecting metrics", zap.Any("errors", errors))
+				logger.Error("errors while collecting metrics", zap.Any("errors", errors))
 				continue
 			}
 
 			err := metrics.SendOnce(ctx, relayClient, stream, buffer, agentCfg, senderLogger)
 			if err != nil {
-				logger.Error("Error while sending metrics", zap.Error(err))
+				logger.Error("error while sending metrics", zap.Error(err))
 				continue
 			}
 		}

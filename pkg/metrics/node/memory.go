@@ -2,10 +2,11 @@ package node
 
 import (
 	"context"
+	"sort"
+	"time"
+
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"github.com/shirou/gopsutil/v3/process"
-	"go.uber.org/zap"
-	"sort"
 )
 
 // listTopMem collects memory usage information for all running processes and returns
@@ -24,9 +25,6 @@ import (
 //     The number of top memory-consuming processes to return. If fewer than topN processes
 //     are available or accessible, the result may contain fewer entries.
 //
-//   - logger *zap.Logger:
-//     Logger used for debug tracing throughout the execution.
-//
 // Returns:
 //
 //   - []*gen.ProcessMemInfo:
@@ -36,17 +34,18 @@ import (
 //   - error:
 //     Returns an error if the initial retrieval of processes fails. Errors during
 //     per-process inspection (e.g., memory or name access) are silently skipped.
+//
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func listTopMem(
 	ctx context.Context,
 	topN int,
-	logger *zap.Logger,
-) ([]*gen.ProcessMemInfo, error) {
-	logger.Debug("Start listTopMem")
+) ([]*gen.ProcessMemInfo, error, time.Duration) {
+	start := time.Now()
 
 	// Retrieve the list of all running processes
 	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, err, time.Since(start)
 	}
 
 	// Preallocate memory for efficiency based on the total number of processes
@@ -82,7 +81,5 @@ func listTopMem(
 	topProcesses := make([]*gen.ProcessMemInfo, top)
 	copy(topProcesses, processesMemInfo[:top])
 
-	logger.Debug("Finish listTopMem")
-
-	return topProcesses, nil
+	return topProcesses, nil, time.Since(start)
 }

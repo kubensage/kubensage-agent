@@ -3,6 +3,8 @@ package pod
 import (
 	"context"
 	"fmt"
+	"time"
+
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
@@ -12,23 +14,21 @@ import (
 // in the SANDBOX_READY state. If false, it fetches all available pod sandboxes.
 //
 // Parameters:
-//   - ctx context.Context:
-//     Standard context for cancellation and timeout propagation.
-//   - runtimeClient cri.RuntimeServiceClient:
-//     The CRI client used to interact with the container runtime's gRPC API.
-//   - getOnlyReady bool:
-//     A boolean flag to determine whether to return only ready pods.
+//   - ctx context.Context: standard context for cancellation and timeout propagation.
+//   - runtimeClient cri.RuntimeServiceClient: the CRI client used to interact with the container runtime's gRPC API.
+//   - getOnlyReady bool: a boolean flag to determine whether to return only ready pods.
 //
 // Returns:
-//   - []*cri.PodSandbox:
-//     A slice of pod sandbox objects returned by the runtime.
-//   - error:
-//     An error if the CRI request fails, or nil on success.
+//   - []*cri.PodSandbox: a slice of pod sandbox objects returned by the runtime.
+//   - error: an error if the CRI request fails, or nil on success.
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func ListPods(
 	ctx context.Context,
 	runtimeClient cri.RuntimeServiceClient,
 	getOnlyReady bool,
-) ([]*cri.PodSandbox, error) {
+) ([]*cri.PodSandbox, error, time.Duration) {
+	start := time.Now()
+
 	PodSandboxFilter := &cri.PodSandboxFilter{State: &cri.PodSandboxStateValue{State: cri.PodSandboxState_SANDBOX_READY}}
 
 	var resp *cri.ListPodSandboxResponse
@@ -39,8 +39,10 @@ func ListPods(
 	} else {
 		resp, err = runtimeClient.ListPodSandbox(ctx, &cri.ListPodSandboxRequest{})
 	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to list pod sandboxes: %v", err.Error())
+		return nil, fmt.Errorf("failed to list pod sandboxes: %v", err.Error()), time.Since(start)
 	}
-	return resp.Items, nil
+
+	return resp.Items, nil, time.Since(start)
 }

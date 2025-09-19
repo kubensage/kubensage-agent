@@ -1,6 +1,8 @@
 package container
 
 import (
+	"time"
+
 	"github.com/kubensage/kubensage-agent/pkg/utils"
 	"github.com/kubensage/kubensage-agent/proto/gen"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -22,22 +24,15 @@ import (
 //
 // Returns:
 //
-//   - *gen.SwapMetrics
-//     A SwapMetrics object with the following fields:
-//
-//   - Timestamp: from stats.Swap.Timestamp
-//
-//   - AvailableBytes: available swap memory (optional)
-//
-//   - UsageBytes: used swap memory (optional)
-//
-//     If stats.Swap is nil, returns an empty SwapMetrics struct with all fields unset.
+//   - *gen.SwapMetrics: A SwapMetrics object with the following fields:
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildSwapMetrics(
 	stats *cri.ContainerStats,
-) *gen.SwapMetrics {
+) (*gen.SwapMetrics, time.Duration) {
+	start := time.Now()
 
 	if stats.Swap == nil {
-		return &gen.SwapMetrics{}
+		return &gen.SwapMetrics{}, time.Since(start)
 	}
 
 	var availableBytes, usageBytes *wrapperspb.UInt64Value
@@ -56,5 +51,5 @@ func buildSwapMetrics(
 		UsageBytes:     usageBytes,
 	}
 
-	return metrics
+	return metrics, time.Since(start)
 }

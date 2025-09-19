@@ -30,9 +30,9 @@ func SetupCRIConnection(
 	socket string,
 	logger *zap.Logger,
 ) (client cri.RuntimeServiceClient, connection *grpc.ClientConn) {
-	logger.Info("Connecting to CRI socket", zap.String("socket", socket))
+	logger.Info("connecting to CRI socket", zap.String("socket", socket))
 	conn := gogrpc.InsecureGrpcConnection(socket, logger)
-	logger.Info("Connected to CRI socket")
+	logger.Info("connected to CRI socket")
 	return cri.NewRuntimeServiceClient(conn), conn
 }
 

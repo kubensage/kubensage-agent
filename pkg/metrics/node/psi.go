@@ -2,12 +2,14 @@ package node
 
 import (
 	"bufio"
-	"github.com/kubensage/kubensage-agent/proto/gen"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/kubensage/kubensage-agent/proto/gen"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // buildPsiMetrics reads Pressure Stall Information (PSI) metrics from a given /proc file.
@@ -25,20 +27,21 @@ import (
 //
 // Returns:
 //   - *gen.PsiMetrics containing the parsed stall data
+//   - time.Duration: the total time taken to complete the function, useful for performance monitoring.
 func buildPsiMetrics(
 	path string,
 	logger *zap.Logger,
-) *gen.PsiMetrics {
-	logger.Debug("Start buildPsiMetrics")
+) (*gen.PsiMetrics, time.Duration) {
+	start := time.Now()
 
 	file, err := os.Open(path)
 	if err != nil {
-		logger.Error("Failed to open metrics file", zap.String("path", path), zap.Error(err))
-		return &gen.PsiMetrics{}
+		logger.Error("failed to open metrics file", zap.String("path", path), zap.Error(err))
+		return &gen.PsiMetrics{}, time.Since(start)
 	}
 	defer func(file *os.File) {
 		if err := file.Close(); err != nil {
-			logger.Error("Error closing PSI file", zap.String("path", path), zap.Error(err))
+			logger.Error("error closing PSI file", zap.String("path", path), zap.Error(err))
 		}
 	}(file)
 
@@ -89,7 +92,5 @@ func buildPsiMetrics(
 		}
 	}
 
-	logger.Debug("Finish buildPrimaryIPs")
-
-	return &metrics
+	return &metrics, time.Since(start)
 }
