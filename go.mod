@@ -5,7 +5,7 @@ go 1.24.4
 // replace github.com/kubensage/go-common => /home/roman/github/kubensage/go-common
 
 require (
-	github.com/kubensage/go-common v1.0.9
+	github.com/kubensage/go-common v1.0.10
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.75.1
