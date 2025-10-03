@@ -126,3 +126,4 @@ Logs are written to `kubensage-agent.log` in append mode. Ensure the agent has r
 ## 📄 License (for now)
 
 MIT © 2025 kubensage authors
+
