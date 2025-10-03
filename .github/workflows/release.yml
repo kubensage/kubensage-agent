@@ -99,7 +99,6 @@ jobs:
           # Release body / description
           body: |
             🎉 Release v${{ env.VERSION }}
-            - Generated from branch `${{ github.event.workflow_run.head_branch }}`
           # Attach build artifacts (binaries or bundles) to the release
           files: build/*
         env:
