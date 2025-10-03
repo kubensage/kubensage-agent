@@ -51,10 +51,3 @@ jobs:
         run: make build
         env:
           VERSION: ${{ env.VERSION }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubensage-agent-${{ env.VERSION }}
-          path: build/*
-          retention-days: 5
