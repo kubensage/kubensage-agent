@@ -1,16 +1,12 @@
-name: Release
+name: RELEASE
 
 on:
-  workflow_run:
-    workflows: [ "PR Build" ]
-    types: [ completed ]
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
 
 permissions:
   contents: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   GO_VERSION: "1.24.4"
@@ -19,12 +15,18 @@ jobs:
   tag-and-release:
     if: >
       ${{
-        github.event.workflow_run.conclusion == 'success' &&
-        startsWith(github.event.workflow_run.head_branch, 'release/v') &&
-        github.event.workflow_run.event == 'pull_request'
+        github.event.pull_request.merged == true &&
+        startsWith(github.event.pull_request.head.ref, 'release/v')
       }}
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout main (post-merge)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
       - name: Compute VERSION from head branch
         run: |
           VERSION="${{ github.event.workflow_run.head_branch }}"
@@ -32,22 +34,14 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "Extracted VERSION=$VERSION"
 
-      - name: Checkout main (post-merge)
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - uses: actions/setup-go@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Install protoc (protobuf-compiler)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          protoc --version
+      - name: Setup Protoc
+        uses: arduino/setup-protoc@v3
 
       - name: Install Go protobuf plugins
         run: |
@@ -59,7 +53,6 @@ jobs:
         run: make build
         env:
           VERSION: ${{ env.VERSION }}
-
       - name: Create Git Tag
         run: |
           set -e

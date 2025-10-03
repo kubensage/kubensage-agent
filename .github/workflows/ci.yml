@@ -1,14 +1,10 @@
-#Esegue build e test su ogni push o PR verso main:
 name: CI
 
 on:
   push:
-    branches:
-      - 'release/**'
+    branches: [ "**" ]
   pull_request:
-    branches:
-      - '**'
-      - '!main'
+    branches: [ "**" ]
 
 permissions:
   contents: read
