@@ -56,7 +56,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kubensage-agent-${{ env.VERSION }}
-          path: build/*
+          path: build
+          if-no-files-found: error
 
   tag-and-release:
     if: ${{ github.event.action == 'closed'
