@@ -2,8 +2,11 @@ package cli
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"time"
 
+	"github.com/kubensage/kubensage-agent/pkg/buildinfo"
 	"go.uber.org/zap"
 )
 
@@ -18,27 +21,40 @@ type AgentConfig struct {
 
 // RegisterAgentFlags registers the CLI flags required to configure the kubensage agent.
 //
-// This function defines flags on the provided FlagSet and returns a closure,
-// which, when executed, parses the values into an AgentConfig struct.
-// The closure also validates required flags and converts durations into proper time.Duration values.
+// This function defines all CLI flags on the provided FlagSet and returns a closure
+// that, when executed, parses and validates their values into an *AgentConfig.
+//
+// The closure ensures required flags are provided, converts integer durations into
+// proper time.Duration values, and optionally prints version information if requested.
 //
 // Required flag:
 //
-//	--relay-address: string, the address of the metrics relay (e.g. "localhost:5000")
+//	--relay-address string
+//	  The address of the metrics relay gRPC server (e.g. "localhost:5000").
 //
 // Optional flags:
 //
-//	--main-loop-duration: int, duration of the metrics collection loop in seconds (default: 5)
-//	--buffer-retention: int, total retention time in minutes for buffered metrics (default: 10)
-//	--top-n: int, number of top memory-consuming processes to report (default: 10)
+//	--main-loop-duration int
+//	  Duration of the main collection loop in seconds (default: 5)
+//
+//	--buffer-retention int
+//	  Total retention time in minutes for buffered metrics (default: 10)
+//
+//	--top-n int
+//	  Number of top memory-consuming processes to report (default: 10)
+//
+//	--version
+//	  If set, prints the current agent version (as defined in pkg/buildinfo.Version) and exits.
 //
 // Parameters:
-//   - fs: *flag.FlagSet - the flag set to which the flags are bound (usually flag.CommandLine)
+//   - fs: *flag.FlagSet
+//     The flag set to which the flags will be bound (usually flag.CommandLine).
 //
 // Returns:
-//   - func(logger *zap.Logger) *AgentConfig:
+//   - func(logger *zap.Logger) *AgentConfig
 //     A closure that builds and returns a validated *AgentConfig.
-//     If the --relay-address is missing, the closure will call logger.Fatal and terminate the program.
+//     If the --relay-address flag is missing, the closure will call logger.Fatal and terminate.
+//     If --version is set, the closure prints the version string and exits with code 0.
 func RegisterAgentFlags(
 	fs *flag.FlagSet,
 ) func(logger *zap.Logger) *AgentConfig {
@@ -46,12 +62,21 @@ func RegisterAgentFlags(
 	mainLoopDuration := fs.Int("main-loop-duration", 5, "Main loop duration in seconds")
 	bufferRetention := fs.Int("buffer-retention", 10, "Buffer retention in minutes")
 	topN := fs.Int("top-n", 10, "Top N processes")
+	version := fs.Bool("version", false, "Print the current version and exit")
 
 	return func(logger *zap.Logger) *AgentConfig {
+		// Handle version flag
+		if *version {
+			fmt.Printf("%s\n", buildinfo.Version)
+			os.Exit(0)
+		}
+
+		// Validate required flags
 		if *relayAddress == "" {
 			logger.Fatal("missing required flag: --relay-address")
 		}
 
+		// Build and return configuration
 		return &AgentConfig{
 			RelayAddress:            *relayAddress,
 			MainLoopDurationSeconds: time.Duration(*mainLoopDuration) * time.Second,
