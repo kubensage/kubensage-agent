@@ -16,14 +16,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.24.4"
+  GO_VERSION: "1.24.4" # verifica che esista davvero su setup-go
 
 jobs:
   pr-build:
     name: PR Build (make build)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,16 +58,66 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  release:
-    name: Release on tag
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+      - name: Compute next version & push tag
+        env:
+          GH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
 
+          LAST_TAG=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Last tag: ${LAST_TAG}"
+
+          # Se l'ultimo tag punta già a HEAD, non fare nulla
+          if [ "$(git rev-list -n 1 "$LAST_TAG" 2>/dev/null || echo "none")" = "$GH_SHA" ]; then
+            echo "HEAD è già taggato con ${LAST_TAG}, niente da fare."
+            exit 0
+          fi
+
+          COMMITS=$(git log "${LAST_TAG}..HEAD" --pretty=%B || true)
+          echo "Commits since ${LAST_TAG}:"
+          echo "${COMMITS}"
+
+          BUMP="patch"
+          if echo "${COMMITS}" | grep -qiE 'BREAKING CHANGE|^[^[:space:]].*!:'; then
+            BUMP="major"
+          elif echo "${COMMITS}" | grep -qiE '^feat(\(.+\))?:'; then
+            BUMP="minor"
+          else
+            BUMP="patch"
+          fi
+          echo "Bump: ${BUMP}"
+
+          # Parse versione corrente
+          V="${LAST_TAG#v}"
+          IFS='.' read -r MA MI PA <<< "${V:-0.0.0}"
+          MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
+
+          case "${BUMP}" in
+            major) MA=$((MA+1)); MI=0; PA=0 ;;
+            minor) MI=$((MI+1)); PA=0 ;;
+            patch) PA=$((PA+1)) ;;
+          esac
+
+          NEW_TAG="v${MA}.${MI}.${PA}"
+          echo "New tag: ${NEW_TAG}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${NEW_TAG}" -m "Auto tag ${NEW_TAG}"
+          git push origin "${NEW_TAG}"
+
+  release:
+    needs: pr-build
+    name: Release on tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (fetch tags)
         uses: actions/checkout@v4
         with:
-          fetch-tags: true
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -89,7 +138,7 @@ jobs:
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - name: Derive VERSION from tag
-        id: v
+        id: version
         run: |
           TAG="${GITHUB_REF_NAME}"
           VERSION="${TAG#v}"
@@ -98,7 +147,7 @@ jobs:
       - name: Make build (tagged)
         run: make build
         env:
-          VERSION: ${{ steps.v.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
 
       - name: Generate checksums
         run: |
@@ -113,7 +162,6 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          files: |
-            build/*
+          files: build/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
