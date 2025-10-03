@@ -2,7 +2,7 @@
 
 OUTPUT_DIR = build
 MODULE := github.com/kubensage/kubensage-agent
-VERSION ?= 1.0.0
+VERSION ?= 0.0.1
 
 .PHONY: build-proto \
 		vet clean tidy build build-linux-amd64 build-linux-arm64 \
