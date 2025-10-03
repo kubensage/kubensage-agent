@@ -109,6 +109,7 @@ jobs:
           git push origin "${NEW_TAG}"
 
   release:
+    needs: pr-build
     name: Release on tag
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
