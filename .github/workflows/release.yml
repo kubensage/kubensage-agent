@@ -29,10 +29,15 @@ jobs:
 
       - name: Compute VERSION from head branch
         run: |
-          VERSION="${{ github.event.workflow_run.head_branch }}"
-          VERSION="${VERSION#release/v}"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "Extracted VERSION=$VERSION"
+          set -euo pipefail
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          VERSION="${BRANCH#release/v}"
+          if [[ -z "${VERSION}" || "${VERSION}" == "${BRANCH}" ]]; then
+            echo "Errore: can't extract VERSION from '${BRANCH}' (looking for prefix 'release/v')." >&2
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Extracted VERSION=${VERSION}"
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -53,6 +58,7 @@ jobs:
         run: make build
         env:
           VERSION: ${{ env.VERSION }}
+
       - name: Create Git Tag
         run: |
           set -e
