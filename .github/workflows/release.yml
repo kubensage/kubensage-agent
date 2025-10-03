@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [ "PR Build" ]
+    types: [ completed ]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  tag-and-release:
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_branch, 'release/v') &&
+        github.event.workflow_run.event == 'pull_request'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute VERSION from head branch
+        run: |
+          VERSION="${{ github.event.workflow_run.head_branch }}"
+          VERSION="${VERSION#release/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Extracted VERSION=$VERSION"
+
+      - name: Checkout main (post-merge)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create Git Tag
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${VERSION}" || true
+          git push origin "v${VERSION}" || true
+
+      - name: Download artifact from previous run
+        uses: actions/download-artifact@v5
+        with:
+          name: kubensage-agent-${{ env.VERSION }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: |
+            🎉 Release v${{ env.VERSION }}
+            - Generated from branch `${{ github.event.workflow_run.head_branch }}`
+          files: build/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
