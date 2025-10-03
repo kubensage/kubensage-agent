@@ -1,39 +1,64 @@
+# 👷 CI Workflow for Go Project with Protobuf Support
+# This workflow automatically builds the project on every push (except main)
+# and on every pull request (testing the merged result) to ensure build stability.
+
 name: CI
 
 on:
+  # Trigger the workflow on:
+  #  - Every push to any branch except "main"
+  #  - Every pull request targeting any branch (usually main)
   push:
-    branches: [ "**" ]
+    branches: [ "**", "!main" ]   # Exclude main branch from push events
   pull_request:
-    branches: [ "**" ]
+    branches: [ "**" ]            # Include all branches for PR events
 
 permissions:
+  # Grant read-only access to repository contents (secure by default)
   contents: read
 
 env:
+  # Define the Go version to be used across all jobs
   GO_VERSION: "1.24.4"
 
 jobs:
   build-test:
+    # Use the latest Ubuntu runner provided by GitHub Actions
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository code
+      # For 'push' events, this checks out the pushed branch.
+      # For 'pull_request' events, GitHub Actions automatically creates
+      # a temporary merge commit between the PR branch and its base (e.g. main),
+      # so this step checks out that merged code to test the integration result.
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Step 2: Setup Go environment
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
+          # Use the Go version defined in env above
           go-version: ${{ env.GO_VERSION }}
+          # Enable caching of Go modules for faster builds
           cache: true
 
+      # Step 3: Install Protocol Buffers compiler (protoc)
       - name: Setup Protoc
         uses: arduino/setup-protoc@v3
 
+      # Step 4: Install Go plugins for Protobuf and gRPC
       - name: Install Go protobuf plugins
         run: |
+          # Install the protoc plugin for Go (for generating .pb.go files)
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          # Install the protoc plugin for gRPC support
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          # Add Go bin directory to system PATH so the tools are available globally
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
+      # Step 5: Build the project using the Makefile
+      # The Makefile should define a 'build' target (e.g., go build ./...)
       - name: Build with Makefile
         run: make build

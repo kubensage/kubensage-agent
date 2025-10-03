@@ -1,80 +1,107 @@
+# 🚀 RELEASE Workflow for Automated Tagging and GitHub Releases
+
 name: RELEASE
 
 on:
+  # Trigger this workflow when a pull request is closed (merged or not)
   pull_request:
     types: [ closed ]
-    branches: [ main ]
+    branches: [ main ]  # Only when the PR targets the main branch
 
 permissions:
+  # Write access is required to create tags and GitHub releases
   contents: write
 
 env:
+  # Define the Go version used for the build process
   GO_VERSION: "1.24.4"
 
 jobs:
   tag-and-release:
+    # Run this job only if:
+    # 1. The pull request was merged successfully
+    # 2. The head branch name starts with 'release/v'
     if: >
       ${{
         github.event.pull_request.merged == true &&
         startsWith(github.event.pull_request.head.ref, 'release/v')
       }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
     steps:
+      # Step 1: Checkout the main branch after merge
       - name: Checkout main (post-merge)
         uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
+          ref: main          # Ensure we work on the updated main branch
+          fetch-depth: 0     # Fetch full history (required for tagging)
 
+      # Step 2: Extract version number from the release branch name
       - name: Compute VERSION from head branch
         run: |
           set -euo pipefail
           BRANCH="${{ github.event.pull_request.head.ref }}"
+          # Extract the version by removing 'release/v' prefix
           VERSION="${BRANCH#release/v}"
+          # Validate that extraction worked correctly
           if [[ -z "${VERSION}" || "${VERSION}" == "${BRANCH}" ]]; then
-            echo "Errore: can't extract VERSION from '${BRANCH}' (looking for prefix 'release/v')." >&2
+            echo "Error: can't extract VERSION from '${BRANCH}' (expecting prefix 'release/v')." >&2
             exit 1
           fi
+          # Export the version as environment variable for later steps
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "Extracted VERSION=${VERSION}"
 
+      # Step 3: Setup Go environment
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
+          go-version: ${{ env.GO_VERSION }}  # Use defined Go version
+          cache: true                        # Cache Go modules for faster builds
 
+      # Step 4: Install Protocol Buffers compiler (protoc)
       - name: Setup Protoc
         uses: arduino/setup-protoc@v3
 
+      # Step 5: Install Go protobuf and gRPC plugins
       - name: Install Go protobuf plugins
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          # Add Go bin directory to PATH for global access
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
+      # Step 6: Build project with Makefile, passing VERSION as env var
       - name: Build with Makefile
         run: make build
         env:
-          VERSION: ${{ env.VERSION }}
+          VERSION: ${{ env.VERSION }}  # Inject the extracted version into build
 
+      # Step 7: Create a Git tag for the new release
       - name: Create Git Tag
         run: |
           set -e
+          # Configure git identity for tagging
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Create and push the version tag (ignore if already exists)
           git tag "v${VERSION}" || true
           git push origin "v${VERSION}" || true
 
+      # Step 8: Create a GitHub Release with the new tag
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # Use the tag created above
           tag_name: v${{ env.VERSION }}
+          # Release title
           name: Release v${{ env.VERSION }}
+          # Release body / description
           body: |
             🎉 Release v${{ env.VERSION }}
             - Generated from branch `${{ github.event.workflow_run.head_branch }}`
+          # Attach build artifacts (binaries or bundles) to the release
           files: build/*
         env:
+          # Required to authenticate and publish the release
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

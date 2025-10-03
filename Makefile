@@ -29,7 +29,7 @@ build-linux-amd64: vet build-proto tidy
 
 build-linux-arm64: vet build-proto tidy
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X '$(MODULE)/pkg/buildinfo.Version=$(VERSION)'" \
-		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
+		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-arm64 cmd/kubensage-agent/main.go
 
 build: clean build-linux-amd64 build-linux-arm64
 
