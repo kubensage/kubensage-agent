@@ -52,13 +52,6 @@ jobs:
         env:
           VERSION: ${{ env.VERSION }}
 
-      - name: Upload PR artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubensage-agent-${{ env.VERSION }}
-          path: build
-          if-no-files-found: error
-
   tag-and-release:
     if: ${{ github.event.action == 'closed'
       && github.event.pull_request.merged == true
@@ -79,7 +72,30 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "Extracted VERSION=$VERSION"
 
-      - name: Create Git Tag
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install protoc (protobuf-compiler)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          protoc --version
+
+      - name: Install Go protobuf plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Build with Makefile
+        run: make build
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Create Git Tag (idempotente)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -100,7 +116,6 @@ jobs:
           body: |
             🎉 Release v${{ env.VERSION }}
             - Generated from branch `${{ github.event.pull_request.head.ref }}`
-          files: |
-            build/*
+          files: build/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
