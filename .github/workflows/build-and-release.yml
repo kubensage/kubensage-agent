@@ -17,7 +17,6 @@ env:
 
 jobs:
   build-and-test:
-    # gira solo durante la vita della PR, non quando viene chiusa
     if: ${{ github.event.action != 'closed' && startsWith(github.head_ref, 'release/v') }}
     runs-on: ubuntu-latest
     steps:
@@ -53,8 +52,13 @@ jobs:
         env:
           VERSION: ${{ env.VERSION }}
 
+      - name: Upload PR artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubensage-agent-${{ env.VERSION }}
+          path: build/*
+
   tag-and-release:
-    # scatta SOLO quando la PR è stata mergiata su main
     if: ${{ github.event.action == 'closed'
       && github.event.pull_request.merged == true
       && github.event.pull_request.base.ref == 'main'
@@ -64,13 +68,11 @@ jobs:
       - name: Checkout main (post-merge)
         uses: actions/checkout@v4
         with:
-          # tagghiamo il commit MERGE su main
           ref: main
           fetch-depth: 0
 
       - name: Extract version from PR head branch
         run: |
-          # es: head.ref=release/v1.2.3 -> VERSION=1.2.3
           VERSION="${{ github.event.pull_request.head.ref }}"
           VERSION="${VERSION#release/v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
@@ -80,9 +82,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # crea il tag sul commit corrente (main già aggiornato col merge)
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kubensage-agent-${{ env.VERSION }}
+          path: build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -92,5 +99,7 @@ jobs:
           body: |
             🎉 Release v${{ env.VERSION }}
             - Generated from branch `${{ github.event.pull_request.head.ref }}`
+          files: |
+            build/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
