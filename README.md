@@ -7,6 +7,81 @@ systems like Prometheus.
 
 ---
 
+# 🧭 Git Flow Overview
+
+This project follows a **lightweight Git Flow** with **feature branches** and **release branches**, fully integrated
+with automated **CI/CD workflows**.
+
+---
+
+## 🌳 Branching Strategy
+
+* **`main`**
+  The **production branch**.
+  Every commit in `main` corresponds to a **stable release version**.
+  ⚠️ **No direct commits** — updates come **only from merged `release/v*` branches**.
+
+* **`feature/*`**
+  For developing new features, fixes, or improvements.
+  Examples:
+
+    * `feature/add-auth`
+    * `feature/fix-typo`
+      Branch off from `main`, and open a **Pull Request** when ready.
+      ✅ The **CI workflow** will build and test the PR using the **merged code preview**.
+
+* **`release/vX.Y.Z`**
+  For preparing a **new release**.
+  Examples:
+
+    * `release/v1.0.0`
+    * `release/v2.3.1`
+      Once the release branch is **merged into `main`**,
+      the **Release Workflow** automatically:
+
+    1. Builds the project
+    2. Creates a Git tag (`vX.Y.Z`)
+    3. Publishes a **GitHub Release** with build artifacts
+
+---
+
+## ⚙️ CI/CD Workflows
+
+* **CI Workflow (`.github/workflows/ci.yml`)**
+  Runs on:
+
+    * Every push (except to `main`)
+    * Every pull request
+      ✅ Builds and validates the merged result before integration.
+
+* **Release Workflow (`.github/workflows/release.yml`)**
+  Runs when:
+
+    * A **pull request targeting `main`** is **merged**
+    * The **source branch starts with `release/v`**
+      🏷️ Automatically tags the release and publishes it to GitHub.
+
+---
+
+## 🚀 Example Flow
+
+1. Create a feature branch:
+
+   ```bash
+   git checkout -b feature/add-login
+   ```
+2. Push your work and open a **Pull Request** → CI runs ✅
+3. Merge into `main` when approved
+4. When preparing a new release:
+
+   ```bash
+   git checkout -b release/v1.2.3
+   ```
+5. Open a PR to `main`
+   → On merge, the **Release workflow** tags `v1.2.3` and publishes the release 🎉
+
+---
+
 ## ✨ Features
 
 * Collects **node metrics**: CPU, memory, PSI, network interfaces, uptime, kernel info, etc.
