@@ -1,0 +1,121 @@
+name: release-flow
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, closed ]
+    branches: [ main ]
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  GO_VERSION: "1.24.4"
+  ARTIFACT_PATH: "dist"     # <-- cambia se necessario (es. bin/)
+  # es: se produci un singolo binario: ARTIFACT_GLOB: "dist/myapp*"
+  ARTIFACT_GLOB: "dist/**"
+
+jobs:
+  pr-ci:
+    name: PR CI (build, test, artifact)
+    if: >
+      github.event.action != 'closed' &&
+      startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build
+        run: |
+          make build
+          test -d "${{ env.ARTIFACT_PATH }}" || { echo "Artifact path not found"; exit 1; }
+
+      - name: Test
+        run: go test ./...
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-build-${{ github.run_id }}
+          path: |
+            ${{ env.ARTIFACT_GLOB }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Tag & GitHub Release (on merged PR)
+    if: >
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.base_ref == 'main' &&
+      startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Extract version from branch (release/vX.Y.Z)
+        id: ver
+        run: |
+          REF="${{ github.head_ref }}"
+          VERSION="${REF#release/}"  # prende la parte dopo "release/"
+          # Safety: deve iniziare con "v"
+          case "$VERSION" in
+            v*) echo "version=$VERSION" >> $GITHUB_OUTPUT ;;
+            *) echo "Branch non conforme (atteso release/vX.Y.Z), trovato: $REF" >&2; exit 1 ;;
+          esac
+
+      - name: Checkout merge commit on main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0  # ci serve per creare tag
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build (release)
+        run: |
+          make build
+          test -d "${{ env.ARTIFACT_PATH }}" || { echo "Artifact path not found"; exit 1; }
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.version }}" -m "Release ${{ steps.ver.outputs.version }}"
+          git push origin "${{ steps.ver.outputs.version }}"
+
+      - name: Upload artifacts for release (prepare)
+        # Rende i file disponibili come output del job se vuoi ispezionarli
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build-${{ steps.ver.outputs.version }}
+          path: |
+            ${{ env.ARTIFACT_GLOB }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.version }}
+          name: ${{ steps.ver.outputs.version }}
+          body: |
+            Release ${{ steps.ver.outputs.version }} generata automaticamente dal merge di #${{ github.event.pull_request.number }}.
+          files: |
+            ${{ env.ARTIFACT_GLOB }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
