@@ -2,7 +2,7 @@
 
 OUTPUT_DIR = build
 MODULE := github.com/kubensage/kubensage-agent
-VERSION ?= 0.0.1
+VERSION ?= local
 
 .PHONY: build-proto \
 		vet clean tidy build build-linux-amd64 build-linux-arm64 \
@@ -23,15 +23,15 @@ tidy:
 vet:
 	go vet ./...
 
-build-linux-amd64: vet clean build-proto tidy
+build-linux-amd64: vet build-proto tidy
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X '$(MODULE)/pkg/buildinfo.Version=$(VERSION)'" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
-build-linux-arm64: vet clean build-proto tidy
+build-linux-arm64: vet build-proto tidy
 	GOOS=linux GOARCH=arm64 go build -ldflags "-X '$(MODULE)/pkg/buildinfo.Version=$(VERSION)'" \
 		-o $(OUTPUT_DIR)/kubensage-agent-$(VERSION)-linux-amd64 cmd/kubensage-agent/main.go
 
-build: build-linux-amd64 build-linux-arm64
+build: clean build-linux-amd64 build-linux-arm64
 
 # Utils
 fresh-scp: build-linux-amd64

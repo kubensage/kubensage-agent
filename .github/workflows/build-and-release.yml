@@ -3,10 +3,7 @@ name: Build & Release
 on:
   pull_request:
     branches: [ "main" ]
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+    types: [ opened, synchronize, reopened, closed ]
 
 permissions:
   contents: write
@@ -16,12 +13,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.24.4" # verifica che esista davvero su setup-go
+  GO_VERSION: "1.24.4"
 
 jobs:
-  pr-build:
-    name: PR Build (make build)
-    if: github.event_name == 'pull_request'
+  build-and-test:
+    # gira solo durante la vita della PR, non quando viene chiusa
+    if: ${{ github.event.action != 'closed' && startsWith(github.head_ref, 'release/v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,125 +40,57 @@ jobs:
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
-      - name: Make build
+      - name: Extract version from branch name
+        run: |
+          VERSION="${GITHUB_HEAD_REF#release/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Extracted VERSION=$VERSION"
+
+      - name: Build with Makefile
         run: make build
         env:
-          VERSION: ${{ vars.DEFAULT_VERSION || '0.0.1' }}
+          VERSION: ${{ env.VERSION }}
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubensage-agent-build
-          path: build/*
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Compute next version & push tag
-        env:
-          GH_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          git fetch --tags --force
-
-          LAST_TAG=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Last tag: ${LAST_TAG}"
-
-          # Se l'ultimo tag punta già a HEAD, non fare nulla
-          if [ "$(git rev-list -n 1 "$LAST_TAG" 2>/dev/null || echo "none")" = "$GH_SHA" ]; then
-            echo "HEAD è già taggato con ${LAST_TAG}, niente da fare."
-            exit 0
-          fi
-
-          COMMITS=$(git log "${LAST_TAG}..HEAD" --pretty=%B || true)
-          echo "Commits since ${LAST_TAG}:"
-          echo "${COMMITS}"
-
-          BUMP="patch"
-          if echo "${COMMITS}" | grep -qiE 'BREAKING CHANGE|^[^[:space:]].*!:'; then
-            BUMP="major"
-          elif echo "${COMMITS}" | grep -qiE '^feat(\(.+\))?:'; then
-            BUMP="minor"
-          else
-            BUMP="patch"
-          fi
-          echo "Bump: ${BUMP}"
-
-          # Parse versione corrente
-          V="${LAST_TAG#v}"
-          IFS='.' read -r MA MI PA <<< "${V:-0.0.0}"
-          MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
-
-          case "${BUMP}" in
-            major) MA=$((MA+1)); MI=0; PA=0 ;;
-            minor) MI=$((MI+1)); PA=0 ;;
-            patch) PA=$((PA+1)) ;;
-          esac
-
-          NEW_TAG="v${MA}.${MI}.${PA}"
-          echo "New tag: ${NEW_TAG}"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag -a "${NEW_TAG}" -m "Auto tag ${NEW_TAG}"
-          git push origin "${NEW_TAG}"
-
-  release:
-    needs: pr-build
-    name: Release on tag
-    if: startsWith(github.ref, 'refs/tags/v')
+  tag-and-release:
+    # scatta SOLO quando la PR è stata mergiata su main
+    if: ${{ github.event.action == 'closed'
+      && github.event.pull_request.merged == true
+      && github.event.pull_request.base.ref == 'main'
+      && startsWith(github.event.pull_request.head.ref, 'release/v') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (fetch tags)
+      - name: Checkout main (post-merge)
         uses: actions/checkout@v4
         with:
+          # tagghiamo il commit MERGE su main
+          ref: main
           fetch-depth: 0
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Install protoc (protobuf-compiler)
+      - name: Extract version from PR head branch
         run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          protoc --version
+          # es: head.ref=release/v1.2.3 -> VERSION=1.2.3
+          VERSION="${{ github.event.pull_request.head.ref }}"
+          VERSION="${VERSION#release/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Extracted VERSION=$VERSION"
 
-      - name: Install Go protobuf plugins
+      - name: Create Git Tag
         run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-          echo "$HOME/go/bin" >> $GITHUB_PATH
-
-      - name: Derive VERSION from tag
-        id: version
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Make build (tagged)
-        run: make build
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-
-      - name: Generate checksums
-        run: |
-          cd build
-          sha256sum * > checksums.txt
-          cat checksums.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # crea il tag sul commit corrente (main già aggiornato col merge)
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          files: build/*
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: |
+            🎉 Release v${{ env.VERSION }}
+            - Generated from branch `${{ github.event.pull_request.head.ref }}`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
